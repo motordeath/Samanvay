@@ -1,41 +1,29 @@
 import { prisma } from '../../prisma';
+import { clearDatabase } from '../helpers/clearDatabase';
+import { createTestOrganization, createTestUser, createTestResource } from '../helpers/testFactory';
 import { createResourceLot } from '../../services/resource-lot.service';
 import { createResourceOffer, acceptOffer } from '../../services/resource-offer.service';
 import { updateTransferStatus } from '../../services/transfer.service';
 
+jest.setTimeout(30000);
+
 describe('Resource Engine Integration Scenario', () => {
-  let hopeFoundation: any;
-  let helpingHands: any;
-  let adminUser: any;
-  let resource: any;
 
-  beforeAll(async () => {
-    // Clean database
-    await prisma.transfer.deleteMany();
-    await prisma.resourceOffer.deleteMany();
-    await prisma.resourceNeed.deleteMany();
-    await prisma.resourceLot.deleteMany();
-    await prisma.resource.deleteMany();
-    await prisma.membership.deleteMany();
-    await prisma.event.deleteMany();
-    await prisma.partnership.deleteMany();
-    await prisma.organization.deleteMany();
-    await prisma.user.deleteMany();
-
-    const suffix = Date.now().toString() + Math.random().toString().substring(2, 6);
-
-    // 1. Setup seed data for the scenario
-    hopeFoundation = await prisma.organization.create({ data: { name: 'Hope Foundation ' + suffix, type: 'NGO', sector: 'Health' } });
-    helpingHands = await prisma.organization.create({ data: { name: 'Helping Hands ' + suffix, type: 'NGO', sector: 'Relief' } });
-    adminUser = await prisma.user.create({ data: { name: 'Alice Admin ' + suffix, email: `alice.test_${suffix}@example.com`, passwordHash: 'hash' } });
-    resource = await prisma.resource.create({ data: { name: 'Blanket ' + suffix, unit: 'units' } });
+  beforeEach(async () => {
+    await clearDatabase(prisma);
   });
 
-  afterAll(async () => {
-    // Cleanup not strictly necessary for this quick integration test in memory/sqlite
+  afterEach(async () => {
+    await clearDatabase(prisma);
   });
 
   test('Full resource coordination flow', async () => {
+    // 1. Setup seed data for the scenario locally
+    const hopeFoundation = await createTestOrganization('NGO', 'Health');
+    const helpingHands = await createTestOrganization('NGO', 'Relief');
+    const adminUser = await createTestUser();
+    const resource = await createTestResource('units');
+
     // Step 1: Hope Foundation creates Need
     const need = await prisma.resourceNeed.create({
       data: {

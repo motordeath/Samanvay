@@ -1,51 +1,41 @@
 import { prisma } from '../../prisma';
+import { clearDatabase } from '../helpers/clearDatabase';
+import { createTestOrganization, createTestUser, createTestResource } from '../helpers/testFactory';
 import { createResourceLot } from '../../services/resource-lot.service';
 import { createResourceOffer, acceptOffer, rejectOffer, withdrawOffer } from '../../services/resource-offer.service';
 import { updateTransferStatus } from '../../services/transfer.service';
-import { recalculateNeedStatus } from '../../services/resource-need.service';
+
+jest.setTimeout(30000);
 
 describe('Resource Engine Unit Tests', () => {
-  let org1: any, org2: any, user: any, resource1: any, resource2: any;
-  let lot1: any, need1: any, offer1: any;
 
-  beforeAll(async () => {
-    // Clean database
-    await prisma.transfer.deleteMany();
-    await prisma.resourceOffer.deleteMany();
-    await prisma.resourceNeed.deleteMany();
-    await prisma.resourceLot.deleteMany();
-    await prisma.resource.deleteMany();
-    await prisma.membership.deleteMany();
-    await prisma.event.deleteMany();
-    await prisma.partnership.deleteMany();
-    await prisma.organization.deleteMany();
-    await prisma.user.deleteMany();
-
-    const suffix = Date.now().toString() + Math.random().toString().substring(2, 6);
-
-    // Setup test data
-    org1 = await prisma.organization.create({ data: { name: 'Org 1 ' + suffix, type: 'NGO', sector: 'Health' } });
-    org2 = await prisma.organization.create({ data: { name: 'Org 2 ' + suffix, type: 'NGO', sector: 'Relief' } });
-    user = await prisma.user.create({ data: { name: 'User ' + suffix, email: `test_${suffix}@example.com`, passwordHash: 'hash' } });
-    resource1 = await prisma.resource.create({ data: { name: 'Food Unit ' + suffix, unit: 'boxes' } });
-    resource2 = await prisma.resource.create({ data: { name: 'Water Unit ' + suffix, unit: 'liters' } });
+  beforeEach(async () => {
+    await clearDatabase(prisma);
   });
 
-  afterAll(async () => {
-    // Cleanup if necessary, though SQLite in memory or separate file might reset
-    // This is just a quick unit test suite
+  afterEach(async () => {
+    await clearDatabase(prisma);
   });
 
   test('Negative inventory rejected', async () => {
+    const org = await createTestOrganization();
+    const resource = await createTestResource();
+
     await expect(createResourceLot({
-      organizationId: org1.id,
-      resourceId: resource1.id,
+      organizationId: org.id,
+      resourceId: resource.id,
       quantity: -5,
       notes: ''
     })).rejects.toThrow('Quantity must be greater than zero.');
   });
 
   test('Resource mismatch rejected', async () => {
+    const org1 = await createTestOrganization();
+    const org2 = await createTestOrganization();
+    const user = await createTestUser();
+    const resource1 = await createTestResource();
+    const resource2 = await createTestResource();
+
     const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
     const need = await prisma.resourceNeed.create({
       data: { organizationId: org2.id, resourceId: resource2.id, quantity: 50, createdById: user.id }
@@ -61,6 +51,11 @@ describe('Resource Engine Unit Tests', () => {
   });
 
   test('Offer exceeds inventory rejected', async () => {
+    const org1 = await createTestOrganization();
+    const org2 = await createTestOrganization();
+    const user = await createTestUser();
+    const resource1 = await createTestResource();
+
     const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 10 });
     const need = await prisma.resourceNeed.create({
       data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
@@ -76,6 +71,11 @@ describe('Resource Engine Unit Tests', () => {
   });
 
   test('Remaining quantity validation on acceptance', async () => {
+    const org1 = await createTestOrganization();
+    const org2 = await createTestOrganization();
+    const user = await createTestUser();
+    const resource1 = await createTestResource();
+
     const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
     const need = await prisma.resourceNeed.create({
       data: { organizationId: org2.id, resourceId: resource1.id, quantity: 10, createdById: user.id }
@@ -93,6 +93,11 @@ describe('Resource Engine Unit Tests', () => {
   });
 
   test('Cancelled transfer restores inventory', async () => {
+    const org1 = await createTestOrganization();
+    const org2 = await createTestOrganization();
+    const user = await createTestUser();
+    const resource1 = await createTestResource();
+
     const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
     const need = await prisma.resourceNeed.create({
       data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
@@ -103,7 +108,7 @@ describe('Resource Engine Unit Tests', () => {
     });
 
     const transfer = await acceptOffer(offer.id, org2.id, user.id);
-    
+
     // Inventory should be 60 now
     let updatedLot = await prisma.resourceLot.findUnique({ where: { id: lot.id } });
     expect(updatedLot?.availableQuantity).toBe(60);
@@ -117,6 +122,11 @@ describe('Resource Engine Unit Tests', () => {
   });
 
   test('Offer state transitions', async () => {
+    const org1 = await createTestOrganization();
+    const org2 = await createTestOrganization();
+    const user = await createTestUser();
+    const resource1 = await createTestResource();
+
     const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
     const need = await prisma.resourceNeed.create({
       data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
@@ -133,6 +143,11 @@ describe('Resource Engine Unit Tests', () => {
   });
 
   test('Transfer state transitions', async () => {
+    const org1 = await createTestOrganization();
+    const org2 = await createTestOrganization();
+    const user = await createTestUser();
+    const resource1 = await createTestResource();
+
     const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
     const need = await prisma.resourceNeed.create({
       data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
@@ -151,6 +166,11 @@ describe('Resource Engine Unit Tests', () => {
   });
 
   test('Need fulfillment calculation', async () => {
+    const org1 = await createTestOrganization();
+    const org2 = await createTestOrganization();
+    const user = await createTestUser();
+    const resource1 = await createTestResource();
+
     const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
     const need = await prisma.resourceNeed.create({
       data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
@@ -162,7 +182,7 @@ describe('Resource Engine Unit Tests', () => {
 
     const transfer = await acceptOffer(offer.id, org2.id, user.id);
     await updateTransferStatus(transfer.id, 'IN_TRANSIT');
-    
+
     // Status is still OPEN because transfer is IN_TRANSIT
     let updatedNeed = await prisma.resourceNeed.findUnique({ where: { id: need.id } });
     expect(updatedNeed?.status).toBe('OPEN');
