@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  type        String // NGO, CSR, GOVERNMENT, INSTITUTION, COMMUNITY
+  sector      String
+  description String?
+  location    String?
+  verified    Boolean  @default(false)
+  status      String   @default("ACTIVE") // ACTIVE, SUSPENDED, ARCHIVED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships  Membership[]
+  events       Event[]
+  partnerships Partnership[] @relation("RequestingOrg")
+  targetedBy   Partnership[] @relation("TargetOrg")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships Membership[]
+}
+
+model Membership {
+  id             String   @id @default(uuid())
+  userId         String
+  organizationId String
+  role           String // ADMIN, COORDINATOR, MEMBER
+  status         String   @default("PENDING") // INVITED, PENDING, ACTIVE, REMOVED
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+model Partnership {
+  id                       String   @id @default(uuid())
+  requestingOrganizationId String
+  targetOrganizationId     String
+  status                   String   @default("PENDING") // PENDING, ACTIVE, REJECTED, ENDED
+  requestedById            String
+  createdById              String?
+  updatedById              String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  requestingOrganization Organization @relation("RequestingOrg", fields: [requestingOrganizationId], references: [id])
+  targetOrganization     Organization @relation("TargetOrg", fields: [targetOrganizationId], references: [id])
+
+  @@unique([requestingOrganizationId, targetOrganizationId])
+}
+
+model Event {
+  id             String   @id @default(uuid())
+  organizationId String
+  title          String
+  type           String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime
+  status         String   @default("DRAFT") // DRAFT, ACTIVE, COMPLETED, CANCELLED
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
