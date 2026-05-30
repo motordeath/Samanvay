@@ -3,20 +3,22 @@ import { PrismaClient } from '@prisma/client';
 /**
  * Atomically wipes every row in the test database.
  *
- * WHY $executeRawUnsafe + TRUNCATE … CASCADE instead of sequential deleteMany:
+ * WHY batch deleteMany instead of TRUNCATE … CASCADE:
  *
- *   Sequential deleteMany is fragile: if any step throws (e.g. a mid-test failure
- *   left orphaned rows that violate an FK the next deleteMany doesn't cover),
- *   subsequent calls start from a dirty state and every following test fails with
- *   cascading FK constraint violations — exactly the pattern seen in the test logs.
+ *   TRUNCATE acquires AccessExclusiveLock on the entire table. On Neon (and any
+ *   Postgres with a connection pool), if another pooled connection still holds a
+ *   RowExclusiveLock from a recently-rolled-back transaction, the two locks
+ *   deadlock (Postgres error 40P01). This caused intermittent test failures even
+ *   with --runInBand, because Prisma's client-side pool keeps multiple connections
+ *   alive concurrently within the same process.
  *
- *   TRUNCATE … CASCADE is a single atomic DDL statement that removes all rows from
- *   every listed table and automatically truncates any table that references them,
- *   regardless of the order rows were inserted.  It is safe to call even when some
- *   tables are empty.  Because it runs inside one implicit transaction, it either
- *   clears everything or nothing — there is no partial state.
+ *   Using prisma.$transaction([...deleteMany()]) instead:
+ *   1. Acquires only row-level locks — no AccessExclusiveLock contention.
+ *   2. Runs as a single atomic BEGIN/COMMIT block.
+ *   3. Tables are deleted in FK-dependency order (most-dependent first), so no
+ *      FK constraint errors occur during deletion.
  *
- * Full FK graph (source → target, for reference):
+ * FK graph (most-dependent → least-dependent):
  *   Transfer        → ResourceNeed, ResourceOffer, Resource, Organization×2
  *   ResourceOffer   → ResourceNeed, ResourceLot, Organization
  *   ResourceNeed    → Organization, Resource, Event (optional)
@@ -24,28 +26,21 @@ import { PrismaClient } from '@prisma/client';
  *   Event           → Organization
  *   Membership      → User, Organization
  *   Partnership     → Organization×2
- *
- * We enumerate every table explicitly so the statement stays correct even if
- * Prisma model names are later renamed — the raw table names must match your
- * actual PostgreSQL schema (snake_case by default from Prisma).
- *
- * RESTART IDENTITY resets sequences so auto-increment PKs start from 1 again
- * in each test, making assertion values predictable.
+ *   Resource        → (none)
+ *   User            → (none)
+ *   Organization    → (none)
  */
 export const clearDatabase = async (prisma: PrismaClient): Promise<void> => {
-  await prisma.$executeRawUnsafe(`
-    TRUNCATE TABLE
-      "Transfer",
-      "ResourceOffer",
-      "ResourceNeed",
-      "ResourceLot",
-      "Event",
-      "Resource",
-      "Membership",
-      "Partnership",
-      "User",
-      "Organization"
-    RESTART IDENTITY
-    CASCADE
-  `);
+  await prisma.$transaction([
+    prisma.transfer.deleteMany(),
+    prisma.resourceOffer.deleteMany(),
+    prisma.resourceNeed.deleteMany(),
+    prisma.resourceLot.deleteMany(),
+    prisma.event.deleteMany(),
+    prisma.membership.deleteMany(),
+    prisma.partnership.deleteMany(),
+    prisma.resource.deleteMany(),
+    prisma.user.deleteMany(),
+    prisma.organization.deleteMany(),
+  ]);
 };

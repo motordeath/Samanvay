@@ -4,4 +4,4 @@
 // causing FK violations when a freshly-inserted row is not yet visible on the
 // connection that runs the next INSERT.
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '.env.test') });
+require('dotenv').config({ path: path.resolve(__dirname, '.env.test'), override: true });

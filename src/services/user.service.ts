@@ -1,8 +1,8 @@
 import { prisma } from '../prisma';
+import bcrypt from 'bcryptjs';
 
 export async function createUser(data: any) {
-  // Mock hashing for Phase 1 as per requirements
-  const passwordHash = `hashed_${data.password}`;
+  const passwordHash = await bcrypt.hash(data.password, 10);
   return await prisma.user.create({
     data: {
       name: data.name,

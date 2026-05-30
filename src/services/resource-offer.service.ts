@@ -97,7 +97,7 @@ export async function acceptOffer(offerId: string, actioningOrganizationId: stri
     });
 
     return transfer;
-  });
+  }, { timeout: 30000 });
 }
 
 export async function rejectOffer(offerId: string, actioningOrganizationId: string) {

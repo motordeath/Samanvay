@@ -1,6 +1,7 @@
 import express from 'express';
 import { errorHandler } from './middleware/error.middleware';
 
+import authRoutes from './routes/auth.routes';
 import organizationRoutes from './routes/organization.routes';
 import userRoutes from './routes/user.routes';
 import membershipRoutes from './routes/membership.routes';
@@ -17,6 +18,7 @@ const app = express();
 
 app.use(express.json());
 
+app.use('/api/auth', authRoutes);
 app.use('/organizations', organizationRoutes);
 app.use('/users', userRoutes);
 app.use('/memberships', membershipRoutes);
