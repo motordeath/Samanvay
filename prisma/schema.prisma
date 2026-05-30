@@ -27,6 +27,7 @@ model Organization {
   resourceOffers ResourceOffer[]
   transfersFrom  Transfer[]      @relation("TransferFromOrg")
   transfersTo    Transfer[]      @relation("TransferToOrg")
+  AuditLog       AuditLog[]
 }
 
 model User {
@@ -37,6 +38,7 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   memberships  Membership[]
+  AuditLog     AuditLog[]
 }
 
 model Membership {
@@ -162,4 +164,46 @@ model Transfer {
   offer              ResourceOffer @relation(fields: [offerId], references: [id])
   resource           Resource      @relation(fields: [resourceId], references: [id])
   toOrganization     Organization  @relation("TransferToOrg", fields: [toOrganizationId], references: [id])
+}
+
+enum AuditAction {
+  USER_REGISTERED
+  USER_LOGIN
+  MEMBERSHIP_CREATED
+  ORGANIZATION_UPDATED
+  EVENT_CREATED
+  EVENT_UPDATED
+  RESOURCE_NEED_CREATED
+  RESOURCE_NEED_CANCELLED
+  RESOURCE_OFFER_CREATED
+  RESOURCE_OFFER_ACCEPTED
+  RESOURCE_OFFER_REJECTED
+  RESOURCE_OFFER_WITHDRAWN
+  TRANSFER_CREATED
+  TRANSFER_COMPLETED
+  TRANSFER_CANCELLED
+}
+
+enum AuditEntityType {
+  USER
+  MEMBERSHIP
+  ORGANIZATION
+  EVENT
+  RESOURCE_NEED
+  RESOURCE_OFFER
+  TRANSFER
+}
+
+model AuditLog {
+  id             String          @id @default(uuid())
+  action         AuditAction
+  userId         String?
+  organizationId String?
+  entityType     AuditEntityType
+  entityId       String
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+
+  user         User?         @relation(fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
 }

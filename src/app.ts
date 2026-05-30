@@ -13,6 +13,7 @@ import resourceLotRoutes from './routes/resource-lot.routes';
 import resourceNeedRoutes from './routes/resource-need.routes';
 import resourceOfferRoutes from './routes/resource-offer.routes';
 import transferRoutes from './routes/transfer.routes';
+import auditRoutes from './routes/audit.routes';
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/resource-lots', resourceLotRoutes);
 app.use('/api/needs', resourceNeedRoutes);
 app.use('/api/offers', resourceOfferRoutes);
 app.use('/api/transfers', transferRoutes);
+app.use('/api/audit', auditRoutes);
 
 app.use(errorHandler);
 
