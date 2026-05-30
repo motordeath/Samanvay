@@ -3,10 +3,25 @@ import { getTransfersController, getTransferController, completeTransferControll
 
 const router = Router();
 
+import { authenticate } from '../middleware/auth.middleware';
+import { requireOrganizationRole } from '../middleware/authorization.middleware';
+
 router.get('/', getTransfersController);
 router.get('/:id', getTransferController);
 router.post('/:id/start', startTransfer);
-router.post('/:id/complete', completeTransferController);
-router.post('/:id/cancel', cancelTransferController);
+
+router.post(
+  '/:id/complete',
+  authenticate,
+  requireOrganizationRole(['OWNER', 'ADMIN', 'COORDINATOR']),
+  completeTransferController
+);
+
+router.post(
+  '/:id/cancel',
+  authenticate,
+  requireOrganizationRole(['OWNER', 'ADMIN']),
+  cancelTransferController
+);
 
 export default router;

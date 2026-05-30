@@ -1,38 +1,20 @@
 import { PrismaClient } from '@prisma/client';
 
-// export const clearDatabase = async (prisma: PrismaClient): Promise<void> => {
-//   await prisma.$transaction([
-//     prisma.transfer.deleteMany(),
-//     prisma.resourceOffer.deleteMany(),
-//     prisma.resourceNeed.deleteMany(),
-//     prisma.resourceLot.deleteMany(),
-//     prisma.event.deleteMany(),
-//     prisma.membership.deleteMany(),
-//     prisma.partnership.deleteMany(),
-//     prisma.resource.deleteMany(),
-//     prisma.user.deleteMany(),
-//     prisma.organization.deleteMany(),
-//   ]);
-// };
-
+// Sequential deletes respecting FK dependency order.
+// Do NOT use prisma.$transaction([...]) here — Postgres does not guarantee
+// evaluation order inside a batch transaction, causing FK violations.
+// Do NOT use a loop inside a transaction — the interactive-transaction protocol
+// holds a single connection open, which starves the pool (connection_limit=1 in .env.test)
+// and causes deadlocks on Neon/PgBouncer.
 export const clearDatabase = async (prisma: PrismaClient): Promise<void> => {
-  const tables = [
-    'transfer',
-    'resourceOffer',
-    'resourceNeed',
-    'resourceLot',
-    'event',
-    'membership',
-    'partnership',
-    'resource',
-    'user',
-    'organization',
-  ];
-
-  await prisma.$transaction(async (tx) => {
-    for (const table of tables) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (tx as any)[table].deleteMany();
-    }
-  });
+  await prisma.transfer.deleteMany();
+  await prisma.resourceOffer.deleteMany();
+  await prisma.resourceNeed.deleteMany();
+  await prisma.resourceLot.deleteMany();
+  await prisma.event.deleteMany();
+  await prisma.membership.deleteMany();
+  await prisma.partnership.deleteMany();
+  await prisma.resource.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.organization.deleteMany();
 };

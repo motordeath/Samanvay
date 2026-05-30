@@ -3,11 +3,32 @@ import { createResourceOfferController, getResourceOffersController, getResource
 
 const router = Router();
 
+import { authenticate } from '../middleware/auth.middleware';
+import { requireOrganizationRole } from '../middleware/authorization.middleware';
+
 router.post('/', createResourceOfferController);
 router.get('/', getResourceOffersController);
 router.get('/:id', getResourceOfferController);
-router.post('/:id/accept', acceptOfferController);
-router.post('/:id/reject', rejectOfferController);
-router.post('/:id/withdraw', withdrawOfferController);
+
+router.post(
+  '/:id/accept',
+  authenticate,
+  requireOrganizationRole(['OWNER', 'ADMIN', 'COORDINATOR']),
+  acceptOfferController
+);
+
+router.post(
+  '/:id/reject',
+  authenticate,
+  requireOrganizationRole(['OWNER', 'ADMIN', 'COORDINATOR']),
+  rejectOfferController
+);
+
+router.post(
+  '/:id/withdraw',
+  authenticate,
+  requireOrganizationRole(['OWNER', 'ADMIN', 'COORDINATOR']),
+  withdrawOfferController
+);
 
 export default router;

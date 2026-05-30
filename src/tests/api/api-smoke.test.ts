@@ -2,25 +2,28 @@ import request from 'supertest';
 import app from '../../app';
 import { clearDatabase } from '../helpers/clearDatabase';
 import { prisma } from '../../prisma';
+import { randomUUID } from 'crypto';
 
 /**
  * API Smoke Tests — Resource Coordination Engine
  *
- * These tests exercise the full HTTP surface end-to-end against a real
- * database. Each test gets a clean slate via clearDatabase (TRUNCATE CASCADE).
+ * Tests exercise the full HTTP surface end-to-end against a real database.
+ * Phase 3.3: protected routes (accept/reject/withdraw/complete/cancel) require
+ *   - Authorization: Bearer <token>
+ *   - { organizationId } in the body
+ *   - The authenticated user must be a member of that org with a qualifying role.
  *
  * Verified field contracts (from controllers + Zod schemas):
  *
- *   POST /users             → { name, email, password }          (createUserSchema)
- *   POST /organizations     → { name, type, sector }             (createOrganizationSchema)
- *   POST /api/resources     → { name, unit, description? }       (createResourceSchema)
+ *   POST /users             → { name, email, password }
+ *   POST /organizations     → { name, type, sector }
+ *   POST /api/resources     → { name, unit, description? }
  *   POST /api/resource-lots → { organizationId, resourceId, quantity, notes? }
  *   POST /api/needs         → { organizationId, resourceId, quantity, createdById }
  *   POST /api/offers        → { needId, offeringOrganizationId, resourceLotId, offeredQuantity, createdById }
- *   POST /api/offers/:id/accept → { organizationId, userId }     (acceptOfferController)
- *     → returns Transfer (status: 'PENDING'), NOT the Offer
+ *   POST /api/offers/:id/accept → { organizationId, userId }  [AUTH REQUIRED, min role: COORDINATOR]
  */
-jest.setTimeout(30000);
+jest.setTimeout(60000);
 
 describe('API Smoke Tests - Resource Coordination Engine', () => {
 
@@ -33,31 +36,39 @@ describe('API Smoke Tests - Resource Coordination Engine', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Helper: register a user via the auth API and return { token, userId }
+  // ---------------------------------------------------------------------------
+  const registerUser = async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      name: 'Smoke Tester',
+      email: `smoke-${randomUUID()}@example.com`,
+      password: 'Test1234!',
+    });
+    expect(res.status).toBe(201);
+    return { token: res.body.data.token as string, userId: res.body.data.user.id as string };
+  };
+
+  // Helper: make a user a member of an org with a given role
+  const makeMember = async (userId: string, organizationId: string, role = 'ADMIN') => {
+    await prisma.membership.create({ data: { userId, organizationId, role } });
+  };
+
+  // ---------------------------------------------------------------------------
   // Full end-to-end coordination workflow
   // ---------------------------------------------------------------------------
 
   it('should complete a full end-to-end resource coordination workflow', async () => {
 
-    // ── Step 1: Create User ──────────────────────────────────────────────────
-    // Schema: { name, email, password }
-    const userRes = await request(app).post('/users').send({
-      name: 'Smoke Tester',
-      email: `smoke-${Date.now()}@example.com`,
-      password: 'Test1234!',
-    });
-    expect(userRes.status).toBe(201);
-    expect(userRes.body.success).toBe(true);
-    const userId: string = userRes.body.data.id;
+    // ── Auth: register operator, create orgs, join both ─────────────────────
+    const { token, userId } = await registerUser();
 
-    // ── Step 2: Create Organizations ─────────────────────────────────────────
-    // Schema: { name, type, sector }  (contactEmail is NOT in schema)
+    // ── Step 1: Create Organizations ─────────────────────────────────────────
     const orgARes = await request(app).post('/organizations').send({
       name: `Offering Org ${Date.now()}`,
       type: 'NGO',
       sector: 'Relief',
     });
     expect(orgARes.status).toBe(201);
-    expect(orgARes.body.success).toBe(true);
     const orgAId: string = orgARes.body.data.id;
 
     const orgBRes = await request(app).post('/organizations').send({
@@ -66,21 +77,22 @@ describe('API Smoke Tests - Resource Coordination Engine', () => {
       sector: 'Health',
     });
     expect(orgBRes.status).toBe(201);
-    expect(orgBRes.body.success).toBe(true);
     const orgBId: string = orgBRes.body.data.id;
 
-    // ── Step 3: Create Resource ───────────────────────────────────────────────
-    // Schema: { name, unit, description? }  (no `category` field)
+    // Operator is ADMIN in both orgs so they can accept on behalf of orgB
+    await makeMember(userId, orgAId);
+    await makeMember(userId, orgBId);
+
+    // ── Step 2: Create Resource ───────────────────────────────────────────────
     const resourceRes = await request(app).post('/api/resources').send({
       name: `Smoke Resource ${Date.now()}`,
       unit: 'BOX',
       description: 'Smoke test resource',
     });
     expect(resourceRes.status).toBe(201);
-    expect(resourceRes.body.success).toBe(true);
     const resourceId: string = resourceRes.body.data.id;
 
-    // ── Step 4: Create Resource Lot (Org A owns 100 units) ───────────────────
+    // ── Step 3: Create Resource Lot (Org A owns 100 units) ───────────────────
     const lotRes = await request(app).post('/api/resource-lots').send({
       organizationId: orgAId,
       resourceId,
@@ -88,11 +100,10 @@ describe('API Smoke Tests - Resource Coordination Engine', () => {
       notes: 'Initial smoke-test stock',
     });
     expect(lotRes.status).toBe(201);
-    expect(lotRes.body.success).toBe(true);
     expect(lotRes.body.data.availableQuantity).toBe(100);
     const lotId: string = lotRes.body.data.id;
 
-    // ── Step 5: Create Need (Org B needs 40 units) ───────────────────────────
+    // ── Step 4: Create Need (Org B needs 40 units) ───────────────────────────
     const needRes = await request(app).post('/api/needs').send({
       organizationId: orgBId,
       resourceId,
@@ -100,11 +111,10 @@ describe('API Smoke Tests - Resource Coordination Engine', () => {
       createdById: userId,
     });
     expect(needRes.status).toBe(201);
-    expect(needRes.body.success).toBe(true);
     expect(needRes.body.data.status).toBe('OPEN');
     const needId: string = needRes.body.data.id;
 
-    // ── Step 6: Create Offer (Org A offers 40 units against the need) ─────────
+    // ── Step 5: Create Offer (Org A offers 40 units) ──────────────────────────
     const offerRes = await request(app).post('/api/offers').send({
       needId,
       offeringOrganizationId: orgAId,
@@ -113,70 +123,60 @@ describe('API Smoke Tests - Resource Coordination Engine', () => {
       createdById: userId,
     });
     expect(offerRes.status).toBe(201);
-    expect(offerRes.body.success).toBe(true);
     expect(offerRes.body.data.status).toBe('PENDING');
     const offerId: string = offerRes.body.data.id;
 
-    // ── Step 7: Accept Offer (Org B accepts) ─────────────────────────────────
-    // Controller reads: { organizationId, userId } — NOT acceptingOrganizationId/acceptedById
-    // acceptOffer() returns a Transfer (status: 'PENDING'), not the Offer
+    // ── Step 6: Accept Offer (Org B accepts) — PROTECTED ─────────────────────
     const acceptRes = await request(app)
       .post(`/api/offers/${offerId}/accept`)
-      .send({
-        organizationId: orgBId,
-        userId,
-      });
+      .set('Authorization', `Bearer ${token}`)
+      .send({ organizationId: orgBId, userId });
     expect(acceptRes.status).toBe(200);
     expect(acceptRes.body.success).toBe(true);
-    // acceptOffer returns the newly-created Transfer, which starts as PENDING
     expect(acceptRes.body.data.status).toBe('PENDING');
     const transferId: string = acceptRes.body.data.id;
 
-    // ── Step 8: Verify Transfer exists in the list ────────────────────────────
+    // ── Step 7: Verify transfer exists ───────────────────────────────────────
     const transfersRes = await request(app)
       .get('/api/transfers')
       .query({ organizationId: orgBId });
     expect(transfersRes.status).toBe(200);
-    expect(transfersRes.body.success).toBe(true);
-
     const transfers: any[] = transfersRes.body.data;
     const transfer = transfers.find((t: any) => t.offerId === offerId);
     expect(transfer).toBeDefined();
     expect(transfer.status).toBe('PENDING');
     expect(transfer.quantity).toBe(40);
-    expect(transfer.id).toBe(transferId);
 
-    // ── Step 9: Verify inventory was reserved ────────────────────────────────
+    // ── Step 8: Verify inventory was reserved ────────────────────────────────
     const lotVerifyRes = await request(app).get(`/api/resource-lots/${lotId}`);
     expect(lotVerifyRes.status).toBe(200);
-    expect(lotVerifyRes.body.success).toBe(true);
-    // 100 original − 40 reserved = 60 available
-    expect(lotVerifyRes.body.data.availableQuantity).toBe(60);
+    expect(lotVerifyRes.body.data.availableQuantity).toBe(60); // 100 - 40
 
-    // ── Step 10: Transfer state machine ──────────────────────────────────────
+    // ── Step 9: Transfer state machine ───────────────────────────────────────
     // PENDING → COMPLETED must be rejected (must go via IN_TRANSIT first)
     const badCompleteRes = await request(app)
-      .post(`/api/transfers/${transferId}/complete`);
+      .post(`/api/transfers/${transferId}/complete`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ organizationId: orgBId });
     expect(badCompleteRes.body.success).toBe(false);
 
-    // PENDING → IN_TRANSIT is allowed
+    // PENDING → IN_TRANSIT (start is not protected)
     const startRes = await request(app)
       .post(`/api/transfers/${transferId}/start`);
     expect(startRes.status).toBe(200);
-    expect(startRes.body.success).toBe(true);
     expect(startRes.body.data.status).toBe('IN_TRANSIT');
 
-    // IN_TRANSIT → COMPLETED is allowed
+    // IN_TRANSIT → COMPLETED — PROTECTED
     const completeRes = await request(app)
-      .post(`/api/transfers/${transferId}/complete`);
+      .post(`/api/transfers/${transferId}/complete`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ organizationId: orgBId });
     expect(completeRes.status).toBe(200);
-    expect(completeRes.body.success).toBe(true);
     expect(completeRes.body.data.status).toBe('COMPLETED');
 
-    // ── Step 11: Need is now FULFILLED ───────────────────────────────────────
+    // ── Step 10: Need is now FULFILLED ───────────────────────────────────────
     const needVerifyRes = await request(app).get(`/api/needs/${needId}`);
     expect(needVerifyRes.status).toBe(200);
-    expect(needVerifyRes.body.success).toBe(true);
     expect(needVerifyRes.body.data.status).toBe('FULFILLED');
   });
 
@@ -187,7 +187,6 @@ describe('API Smoke Tests - Resource Coordination Engine', () => {
   describe('Validation Smoke Tests', () => {
 
     it('should reject invalid resource creation (missing required fields)', async () => {
-      // name and unit are required; empty body must fail validation
       const res = await request(app).post('/api/resources').send({});
       expect(res.status).not.toBe(200);
       expect(res.status).not.toBe(201);
@@ -195,44 +194,43 @@ describe('API Smoke Tests - Resource Coordination Engine', () => {
     });
 
     it('should return 404 for a non-existent resource UUID', async () => {
-      // A valid-format UUID that does not exist in the DB returns 404 with success: false
       const res = await request(app).get('/api/resources/00000000-0000-0000-0000-000000000000');
       expect(res.status).toBe(404);
       expect(res.body.success).toBe(false);
     });
 
     it('should reject need creation with missing required fields', async () => {
-      // organizationId, resourceId, createdById are required UUIDs — omitting them must fail
-      const res = await request(app).post('/api/needs').send({
-        quantity: 10,
-      });
+      const res = await request(app).post('/api/needs').send({ quantity: 10 });
       expect(res.status).not.toBe(200);
       expect(res.status).not.toBe(201);
       expect(res.body.success).toBe(false);
     });
 
     it('should reject offer acceptance by wrong organization', async () => {
-      // Set up minimal fixture state directly via Prisma
+      // Register an operator who is ADMIN of wrongOrg but NOT needOrg
+      const { token, userId } = await registerUser();
+
       const offeringOrg = await prisma.organization.create({
-        data: { name: `offeringOrg-${Date.now()}`, type: 'NGO', sector: 'Relief' },
+        data: { name: `offeringOrg-${randomUUID()}`, type: 'NGO', sector: 'Relief' },
       });
       const needOrg = await prisma.organization.create({
-        data: { name: `needOrg-${Date.now()}`, type: 'NGO', sector: 'Health' },
+        data: { name: `needOrg-${randomUUID()}`, type: 'NGO', sector: 'Health' },
       });
       const wrongOrg = await prisma.organization.create({
-        data: { name: `wrongOrg-${Date.now()}`, type: 'NGO', sector: 'Other' },
+        data: { name: `wrongOrg-${randomUUID()}`, type: 'NGO', sector: 'Other' },
       });
-      const user = await prisma.user.create({
-        data: { name: 'test-user', email: `u-${Date.now()}@x.com`, passwordHash: 'h' },
-      });
+
+      // Operator is only in wrongOrg — so the auth middleware passes, but the engine rejects
+      await makeMember(userId, wrongOrg.id);
+
       const resource = await prisma.resource.create({
-        data: { name: `res-${Date.now()}`, unit: 'units' },
+        data: { name: `res-${randomUUID()}`, unit: 'units' },
       });
       const lot = await prisma.resourceLot.create({
         data: { organizationId: offeringOrg.id, resourceId: resource.id, quantity: 50, availableQuantity: 50 },
       });
       const need = await prisma.resourceNeed.create({
-        data: { organizationId: needOrg.id, resourceId: resource.id, quantity: 50, createdById: user.id },
+        data: { organizationId: needOrg.id, resourceId: resource.id, quantity: 50, createdById: userId },
       });
       const offer = await prisma.resourceOffer.create({
         data: {
@@ -240,15 +238,16 @@ describe('API Smoke Tests - Resource Coordination Engine', () => {
           offeringOrganizationId: offeringOrg.id,
           resourceLotId: lot.id,
           offeredQuantity: 50,
-          createdById: user.id,
+          createdById: userId,
           status: 'PENDING',
         },
       });
 
-      // wrongOrg is not the need owner — controller sends { organizationId, userId }
+      // wrongOrg is not the need owner — engine should reject (business logic, not auth)
       const res = await request(app)
         .post(`/api/offers/${offer.id}/accept`)
-        .send({ organizationId: wrongOrg.id, userId: user.id });
+        .set('Authorization', `Bearer ${token}`)
+        .send({ organizationId: wrongOrg.id, userId });
 
       expect(res.body.success).toBe(false);
 

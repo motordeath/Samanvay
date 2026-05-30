@@ -5,3 +5,6 @@
 // connection that runs the next INSERT.
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env.test'), override: true });
+
+// Increase default timeout to 30s to prevent clearDatabase from timing out and leaking into next tests
+jest.setTimeout(30000);

@@ -8,22 +8,20 @@ datasource db {
 }
 
 model Organization {
-  id          String   @id @default(uuid())
-  name        String
-  type        String // NGO, CSR, GOVERNMENT, INSTITUTION, COMMUNITY
-  sector      String
-  description String?
-  location    String?
-  verified    Boolean  @default(false)
-  status      String   @default("ACTIVE") // ACTIVE, SUSPENDED, ARCHIVED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  memberships    Membership[]
+  id             String          @id @default(uuid())
+  name           String
+  type           String
+  sector         String
+  description    String?
+  location       String?
+  verified       Boolean         @default(false)
+  status         String          @default("ACTIVE")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   events         Event[]
+  memberships    Membership[]
   partnerships   Partnership[]   @relation("RequestingOrg")
   targetedBy     Partnership[]   @relation("TargetOrg")
-  
   resourceLots   ResourceLot[]
   resourceNeeds  ResourceNeed[]
   resourceOffers ResourceOffer[]
@@ -32,145 +30,136 @@ model Organization {
 }
 
 model User {
-  id           String   @id @default(uuid())
+  id           String       @id @default(uuid())
   name         String
-  email        String   @unique
+  email        String       @unique
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  memberships Membership[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
 }
 
 model Membership {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   userId         String
   organizationId String
-  role           String // ADMIN, COORDINATOR, MEMBER
-  status         String   @default("PENDING") // INVITED, PENDING, ACTIVE, REMOVED
-  createdAt      DateTime @default(now())
-
-  user          User           @relation(fields: [userId], references: [id])
-  organization  Organization   @relation(fields: [organizationId], references: [id])
+  role           String
+  status         String       @default("PENDING")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
 
   @@unique([userId, organizationId])
 }
 
 model Partnership {
-  id                       String   @id @default(uuid())
+  id                       String       @id @default(uuid())
   requestingOrganizationId String
   targetOrganizationId     String
-  status                   String   @default("PENDING") // PENDING, ACTIVE, REJECTED, ENDED
+  status                   String       @default("PENDING")
   requestedById            String
   createdById              String?
   updatedById              String?
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
-
-  requestingOrganization Organization @relation("RequestingOrg", fields: [requestingOrganizationId], references: [id])
-  targetOrganization     Organization @relation("TargetOrg", fields: [targetOrganizationId], references: [id])
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+  requestingOrganization   Organization @relation("RequestingOrg", fields: [requestingOrganizationId], references: [id])
+  targetOrganization       Organization @relation("TargetOrg", fields: [targetOrganizationId], references: [id])
 
   @@unique([requestingOrganizationId, targetOrganizationId])
 }
 
 model Event {
-  id             String   @id @default(uuid())
+  id             String         @id @default(uuid())
   organizationId String
   title          String
   type           String
   description    String?
   startDate      DateTime
   endDate        DateTime
-  status         String   @default("DRAFT") // DRAFT, ACTIVE, COMPLETED, CANCELLED
+  status         String         @default("DRAFT")
   createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   organization   Organization   @relation(fields: [organizationId], references: [id])
   resourceNeeds  ResourceNeed[]
 }
 
 model Resource {
-  id          String   @id @default(uuid())
-  name        String   @unique
+  id          String         @id @default(uuid())
+  name        String         @unique
   description String?
   unit        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  lots      ResourceLot[]
-  needs     ResourceNeed[]
-  transfers Transfer[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  lots        ResourceLot[]
+  needs       ResourceNeed[]
+  transfers   Transfer[]
 }
 
 model ResourceLot {
-  id                String   @id @default(uuid())
+  id                String          @id @default(uuid())
   organizationId    String
   resourceId        String
   quantity          Int
   availableQuantity Int
   notes             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  organization Organization    @relation(fields: [organizationId], references: [id])
-  resource     Resource        @relation(fields: [resourceId], references: [id])
-  offers       ResourceOffer[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  resource          Resource        @relation(fields: [resourceId], references: [id])
+  offers            ResourceOffer[]
 }
 
 model ResourceNeed {
-  id             String   @id @default(uuid())
+  id             String          @id @default(uuid())
   organizationId String
   eventId        String?
   resourceId     String
   quantity       Int
   notes          String?
-  status         String   @default("OPEN") // OPEN, PARTIALLY_FULFILLED, FULFILLED, CANCELLED
+  status         String          @default("OPEN")
   createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization Organization    @relation(fields: [organizationId], references: [id])
-  resource     Resource        @relation(fields: [resourceId], references: [id])
-  event        Event?          @relation(fields: [eventId], references: [id])
-  offers       ResourceOffer[]
-  transfers    Transfer[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  event          Event?          @relation(fields: [eventId], references: [id])
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  resource       Resource        @relation(fields: [resourceId], references: [id])
+  offers         ResourceOffer[]
+  transfers      Transfer[]
 }
 
 model ResourceOffer {
-  id                     String   @id @default(uuid())
+  id                     String       @id @default(uuid())
   needId                 String
   offeringOrganizationId String
   resourceLotId          String
   offeredQuantity        Int
   notes                  String?
-  status                 String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, WITHDRAWN
+  status                 String       @default("PENDING")
   createdById            String
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-
-  need                 ResourceNeed @relation(fields: [needId], references: [id])
-  offeringOrganization Organization @relation(fields: [offeringOrganizationId], references: [id])
-  resourceLot          ResourceLot  @relation(fields: [resourceLotId], references: [id])
-  transfers            Transfer[]
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  need                   ResourceNeed @relation(fields: [needId], references: [id])
+  offeringOrganization   Organization @relation(fields: [offeringOrganizationId], references: [id])
+  resourceLot            ResourceLot  @relation(fields: [resourceLotId], references: [id])
+  transfers              Transfer[]
 }
 
 model Transfer {
-  id                 String   @id @default(uuid())
+  id                 String        @id @default(uuid())
   needId             String
   offerId            String
   resourceId         String
   fromOrganizationId String
   toOrganizationId   String
   quantity           Int
-  status             String   @default("PENDING") // PENDING, IN_TRANSIT, COMPLETED, CANCELLED
+  status             String        @default("PENDING")
   approvedById       String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  need             ResourceNeed  @relation(fields: [needId], references: [id])
-  offer            ResourceOffer @relation(fields: [offerId], references: [id])
-  resource         Resource      @relation(fields: [resourceId], references: [id])
-  fromOrganization Organization  @relation("TransferFromOrg", fields: [fromOrganizationId], references: [id])
-  toOrganization   Organization  @relation("TransferToOrg", fields: [toOrganizationId], references: [id])
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  fromOrganization   Organization  @relation("TransferFromOrg", fields: [fromOrganizationId], references: [id])
+  need               ResourceNeed  @relation(fields: [needId], references: [id])
+  offer              ResourceOffer @relation(fields: [offerId], references: [id])
+  resource           Resource      @relation(fields: [resourceId], references: [id])
+  toOrganization     Organization  @relation("TransferToOrg", fields: [toOrganizationId], references: [id])
 }
