@@ -2,11 +2,25 @@ import { Request, Response, NextFunction } from 'express';
 import { createResourceOfferSchema } from '../schemas/resource.schema';
 import { createResourceOffer, getResourceOffers, getOfferById, acceptOffer, rejectOffer, withdrawOffer } from '../services/resource-offer.service';
 import { createSuccessResponse } from '../utils/response';
+import { safeAudit } from '../utils/safe-audit';
+import { createAuditLog } from '../services/audit.service';
+import { AuthRequest } from '../middleware/auth.middleware';
 
-export async function createResourceOfferController(req: Request, res: Response, next: NextFunction) {
+export async function createResourceOfferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const validatedData = createResourceOfferSchema.parse(req.body);
     const offer = await createResourceOffer(validatedData);
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'RESOURCE_OFFER_CREATED',
+        entityType: 'RESOURCE_OFFER',
+        entityId: offer.id,
+        userId: req.user?.id,
+        organizationId: offer.offeringOrganizationId,
+      })
+    );
+
     res.status(201).json(createSuccessResponse(offer));
   } catch (error) {
     next(error);
@@ -44,7 +58,7 @@ export async function getResourceOfferController(req: Request, res: Response, ne
   }
 }
 
-export async function acceptOfferController(req: Request, res: Response, next: NextFunction) {
+export async function acceptOfferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const { organizationId, userId } = req.body;
@@ -54,13 +68,24 @@ export async function acceptOfferController(req: Request, res: Response, next: N
     }
 
     const transfer = await acceptOffer(id, organizationId, userId);
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'RESOURCE_OFFER_ACCEPTED',
+        entityType: 'RESOURCE_OFFER',
+        entityId: id,
+        userId: req.user?.id,
+        organizationId,
+      })
+    );
+
     res.status(200).json(createSuccessResponse(transfer));
   } catch (error) {
     next(error);
   }
 }
 
-export async function rejectOfferController(req: Request, res: Response, next: NextFunction) {
+export async function rejectOfferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const { organizationId } = req.body;
@@ -70,16 +95,38 @@ export async function rejectOfferController(req: Request, res: Response, next: N
     }
 
     const offer = await rejectOffer(id, organizationId);
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'RESOURCE_OFFER_REJECTED',
+        entityType: 'RESOURCE_OFFER',
+        entityId: offer.id,
+        userId: req.user?.id,
+        organizationId,
+      })
+    );
+
     res.status(200).json(createSuccessResponse(offer));
   } catch (error) {
     next(error);
   }
 }
 
-export async function withdrawOfferController(req: Request, res: Response, next: NextFunction) {
+export async function withdrawOfferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const offer = await withdrawOffer(id);
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'RESOURCE_OFFER_WITHDRAWN',
+        entityType: 'RESOURCE_OFFER',
+        entityId: offer.id,
+        userId: req.user?.id,
+        organizationId: offer.offeringOrganizationId,
+      })
+    );
+
     res.status(200).json(createSuccessResponse(offer));
   } catch (error) {
     next(error);

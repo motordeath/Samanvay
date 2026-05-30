@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { register, login } from '../services/auth.service';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { safeAudit } from '../utils/safe-audit';
+import { createAuditLog } from '../services/audit.service';
 
 const registerSchema = z.object({
   name: z.string().min(1),
@@ -18,6 +20,14 @@ export const registerController = async (req: Request, res: Response, next: Next
   try {
     const data = registerSchema.parse(req.body);
     const result = await register(data);
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'USER_REGISTERED',
+        entityType: 'USER',
+        entityId: result.user.id,
+      })
+    );
 
     return res.status(201).json({
       success: true,
@@ -39,6 +49,15 @@ export const loginController = async (req: Request, res: Response, next: NextFun
   try {
     const data = loginSchema.parse(req.body);
     const result = await login(data.email, data.password);
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'USER_LOGIN',
+        entityType: 'USER',
+        entityId: result.user.id,
+        userId: result.user.id,
+      })
+    );
 
     return res.json({
       success: true,

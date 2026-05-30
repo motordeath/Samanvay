@@ -38,7 +38,7 @@ export async function acceptOffer(offerId: string, actioningOrganizationId: stri
   return await prisma.$transaction(async (tx) => {
     const offer = await tx.resourceOffer.findUnique({
       where: { id: offerId },
-      include: { need: true, resourceLot: true },
+      include: { need: true },
     });
     if (!offer) throw new Error('Offer not found');
 
@@ -64,7 +64,21 @@ export async function acceptOffer(offerId: string, actioningOrganizationId: stri
       throw new Error(`Cannot exceed remaining need quantity. Remaining: ${remainingNeed}`);
     }
 
-    if (offer.offeredQuantity > offer.resourceLot.availableQuantity) {
+    // Lock ResourceLot to prevent concurrent double-spend
+    await tx.$queryRaw`
+      SELECT id
+      FROM "ResourceLot"
+      WHERE id = ${offer.resourceLotId}
+      FOR UPDATE
+    `;
+
+    const lot = await tx.resourceLot.findUnique({
+      where: { id: offer.resourceLotId },
+    });
+
+    if (!lot) throw new Error('ResourceLot not found');
+
+    if (offer.offeredQuantity > lot.availableQuantity) {
       throw new Error('Cannot exceed available inventory on offer.');
     }
 

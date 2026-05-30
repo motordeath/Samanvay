@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import * as orgService from '../services/organization.service';
 import { createOrganizationSchema, updateOrganizationSchema } from '../schemas/organization.schema';
 import { createSuccessResponse } from '../utils/response';
+import { safeAudit } from '../utils/safe-audit';
+import { createAuditLog } from '../services/audit.service';
+import { AuthRequest } from '../middleware/auth.middleware';
 
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
@@ -33,11 +36,22 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function update(req: Request, res: Response, next: NextFunction) {
+export async function update(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const id = String(req.params.id);
     const data = updateOrganizationSchema.parse(req.body);
     const org = await orgService.updateOrganization(id, data);
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'ORGANIZATION_UPDATED',
+        entityType: 'ORGANIZATION',
+        entityId: org.id,
+        userId: req.user?.id,
+        organizationId: org.id,
+      })
+    );
+
     res.json(createSuccessResponse(org));
   } catch (error) {
     next(error);

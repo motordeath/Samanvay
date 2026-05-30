@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { getTransfers, getTransferById, updateTransferStatus } from '../services/transfer.service';
 import { createSuccessResponse } from '../utils/response';
+import { safeAudit } from '../utils/safe-audit';
+import { createAuditLog } from '../services/audit.service';
+import { AuthRequest } from '../middleware/auth.middleware';
 
 export async function getTransfersController(req: Request, res: Response, next: NextFunction) {
   try {
@@ -39,20 +42,50 @@ export async function getTransferController(req: Request, res: Response, next: N
   }
 }
 
-export async function completeTransferController(req: Request, res: Response, next: NextFunction) {
+export async function completeTransferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const transfer = await updateTransferStatus(id, 'COMPLETED');
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'TRANSFER_COMPLETED',
+        entityType: 'TRANSFER',
+        entityId: transfer.id,
+        userId: req.user?.id,
+        organizationId: transfer.toOrganizationId,
+        metadata: {
+          previousStatus: 'IN_TRANSIT',
+          newStatus: 'COMPLETED'
+        }
+      })
+    );
+
     res.status(200).json(createSuccessResponse(transfer));
   } catch (error) {
     next(error);
   }
 }
 
-export async function cancelTransferController(req: Request, res: Response, next: NextFunction) {
+export async function cancelTransferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const transfer = await updateTransferStatus(id, 'CANCELLED');
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'TRANSFER_CANCELLED',
+        entityType: 'TRANSFER',
+        entityId: transfer.id,
+        userId: req.user?.id,
+        organizationId: transfer.toOrganizationId,
+        metadata: {
+          previousStatus: 'PENDING',
+          newStatus: 'CANCELLED'
+        }
+      })
+    );
+
     res.status(200).json(createSuccessResponse(transfer));
   } catch (error) {
     next(error);

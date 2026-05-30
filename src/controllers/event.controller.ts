@@ -2,11 +2,25 @@ import { Request, Response, NextFunction } from 'express';
 import * as eventService from '../services/event.service';
 import { createEventSchema, updateEventSchema } from '../schemas/event.schema';
 import { createSuccessResponse } from '../utils/response';
+import { safeAudit } from '../utils/safe-audit';
+import { createAuditLog } from '../services/audit.service';
+import { AuthRequest } from '../middleware/auth.middleware';
 
-export async function create(req: Request, res: Response, next: NextFunction) {
+export async function create(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const data = createEventSchema.parse(req.body);
     const event = await eventService.createEvent(data);
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'EVENT_CREATED',
+        entityType: 'EVENT',
+        entityId: event.id,
+        userId: req.user?.id,
+        organizationId: event.organizationId,
+      })
+    );
+
     res.status(201).json(createSuccessResponse(event));
   } catch (error) {
     next(error);
@@ -33,11 +47,22 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function update(req: Request, res: Response, next: NextFunction) {
+export async function update(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const id = String(req.params.id);
     const data = updateEventSchema.parse(req.body);
     const event = await eventService.updateEvent(id, data);
+
+    await safeAudit(() =>
+      createAuditLog({
+        action: 'EVENT_UPDATED',
+        entityType: 'EVENT',
+        entityId: event.id,
+        userId: req.user?.id,
+        organizationId: event.organizationId,
+      })
+    );
+
     res.json(createSuccessResponse(event));
   } catch (error) {
     next(error);
