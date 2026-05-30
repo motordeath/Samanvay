@@ -1,5 +1,4 @@
 import { prisma } from '../prisma';
-import { recalculateNeedStatus } from './resource-need.service';
 
 export async function updateTransferStatus(transferId: string, newStatus: string) {
   return await prisma.$transaction(async (tx) => {
@@ -7,18 +6,22 @@ export async function updateTransferStatus(transferId: string, newStatus: string
       where: { id: transferId },
       include: { offer: true },
     });
+
     if (!transfer) throw new Error('Transfer not found');
 
-    // Invariant 15: Transfer State Machine
+    // Invariant 15: Valid transfer state transitions
     const validTransitions: Record<string, string[]> = {
-      'PENDING': ['IN_TRANSIT', 'CANCELLED'],
-      'IN_TRANSIT': ['COMPLETED'],
-      'COMPLETED': [],
-      'CANCELLED': [],
+      PENDING: ['IN_TRANSIT', 'CANCELLED'],
+      IN_TRANSIT: ['COMPLETED', 'CANCELLED'],
+      COMPLETED: [],
+      CANCELLED: [],
     };
 
-    if (!validTransitions[transfer.status].includes(newStatus)) {
-      throw new Error(`Invalid state transition: Cannot transition from ${transfer.status} to ${newStatus}`);
+    const allowed = validTransitions[transfer.status] ?? [];
+    if (!allowed.includes(newStatus)) {
+      throw new Error(
+        `Invalid state transition: ${transfer.status} -> ${newStatus}`
+      );
     }
 
     const updatedTransfer = await tx.transfer.update({
@@ -26,26 +29,60 @@ export async function updateTransferStatus(transferId: string, newStatus: string
       data: { status: newStatus },
     });
 
+    // Invariant 9: Cancelling a transfer restores reserved inventory
     if (newStatus === 'CANCELLED') {
-      // Invariant 9: Cancelled transfer releases reserved inventory
       await tx.resourceLot.update({
         where: { id: transfer.offer.resourceLotId },
-        data: {
-          availableQuantity: { increment: transfer.quantity },
-        },
+        data: { availableQuantity: { increment: transfer.quantity } },
+      });
+
+      // Revert the offer back to PENDING so it can potentially be re-accepted
+      await tx.resourceOffer.update({
+        where: { id: transfer.offerId },
+        data: { status: 'PENDING' },
       });
     }
 
+    // Invariant 16: Need status recalculated when a transfer completes
     if (newStatus === 'COMPLETED') {
-      // Invariant 10: Completed transfer does NOT restore inventory (already reserved).
-      // Invariant 11 & 12: Trigger recalculation of Need status
-      await recalculateNeedStatus(transfer.needId, tx);
+      const need = await tx.resourceNeed.findUnique({
+        where: { id: transfer.needId },
+        include: {
+          transfers: true,
+        },
+      });
+
+      if (need) {
+        const totalFulfilled = need.transfers
+          .filter((t) => t.status === 'COMPLETED' || t.id === transferId)
+          .reduce((sum, t) => sum + t.quantity, 0);
+
+        const needStatus =
+          totalFulfilled >= need.quantity
+            ? 'FULFILLED'
+            : totalFulfilled > 0
+              ? 'PARTIALLY_FULFILLED'
+              : 'OPEN';
+
+        await tx.resourceNeed.update({
+          where: { id: need.id },
+          data: { status: needStatus },
+        });
+      }
     }
 
     return updatedTransfer;
-  });
+  }, { timeout: 30000 }); // match jest.setTimeout to prevent stale transaction errors
 }
 
 export async function getTransferById(id: string) {
   return await prisma.transfer.findUnique({ where: { id } });
+}
+
+export async function getTransfers(filters: any, skip: number = 0, take: number = 20) {
+  return await prisma.transfer.findMany({
+    where: filters,
+    skip,
+    take,
+  });
 }

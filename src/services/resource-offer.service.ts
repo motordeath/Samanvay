@@ -137,3 +137,15 @@ export async function withdrawOffer(offerId: string) {
     data: { status: 'WITHDRAWN' },
   });
 }
+
+export async function getResourceOffers(filters: any, skip: number = 0, take: number = 20) {
+  return await prisma.resourceOffer.findMany({
+    where: filters,
+    skip,
+    take,
+  });
+}
+
+export async function getOfferById(id: string) {
+  return await prisma.resourceOffer.findUnique({ where: { id } });
+}

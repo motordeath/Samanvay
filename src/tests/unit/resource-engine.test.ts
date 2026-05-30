@@ -1,6 +1,6 @@
 import { prisma } from '../../prisma';
 import { clearDatabase } from '../helpers/clearDatabase';
-import { createTestOrganization, createTestUser, createTestResource } from '../helpers/testFactory';
+import { createTestOrganization, createTestUser, createTestResource, createTestNeed } from '../helpers/testFactory';
 import { createResourceLot } from '../../services/resource-lot.service';
 import { createResourceOffer, acceptOffer, rejectOffer, withdrawOffer } from '../../services/resource-offer.service';
 import { updateTransferStatus } from '../../services/transfer.service';
@@ -36,10 +36,8 @@ describe('Resource Engine Unit Tests', () => {
     const resource1 = await createTestResource();
     const resource2 = await createTestResource();
 
-    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: org2.id, resourceId: resource2.id, quantity: 50, createdById: user.id }
-    });
+    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100, notes: '' });
+    const need = await createTestNeed({ organizationId: org2.id, resourceId: resource2.id, quantity: 50, createdById: user.id });
 
     await expect(createResourceOffer({
       needId: need.id,
@@ -56,10 +54,8 @@ describe('Resource Engine Unit Tests', () => {
     const user = await createTestUser();
     const resource1 = await createTestResource();
 
-    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 10 });
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
-    });
+    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 10, notes: '' });
+    const need = await createTestNeed({ organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id });
 
     await expect(createResourceOffer({
       needId: need.id,
@@ -76,10 +72,8 @@ describe('Resource Engine Unit Tests', () => {
     const user = await createTestUser();
     const resource1 = await createTestResource();
 
-    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: org2.id, resourceId: resource1.id, quantity: 10, createdById: user.id }
-    });
+    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100, notes: '' });
+    const need = await createTestNeed({ organizationId: org2.id, resourceId: resource1.id, quantity: 10, createdById: user.id });
 
     const offer = await createResourceOffer({
       needId: need.id,
@@ -98,10 +92,8 @@ describe('Resource Engine Unit Tests', () => {
     const user = await createTestUser();
     const resource1 = await createTestResource();
 
-    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
-    });
+    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100, notes: '' });
+    const need = await createTestNeed({ organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id });
 
     const offer = await createResourceOffer({
       needId: need.id, offeringOrganizationId: org1.id, resourceLotId: lot.id, offeredQuantity: 40, createdById: user.id
@@ -127,10 +119,8 @@ describe('Resource Engine Unit Tests', () => {
     const user = await createTestUser();
     const resource1 = await createTestResource();
 
-    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
-    });
+    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100, notes: '' });
+    const need = await createTestNeed({ organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id });
 
     const offer = await createResourceOffer({
       needId: need.id, offeringOrganizationId: org1.id, resourceLotId: lot.id, offeredQuantity: 10, createdById: user.id
@@ -148,10 +138,8 @@ describe('Resource Engine Unit Tests', () => {
     const user = await createTestUser();
     const resource1 = await createTestResource();
 
-    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
-    });
+    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100, notes: '' });
+    const need = await createTestNeed({ organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id });
 
     const offer = await createResourceOffer({
       needId: need.id, offeringOrganizationId: org1.id, resourceLotId: lot.id, offeredQuantity: 10, createdById: user.id
@@ -171,10 +159,8 @@ describe('Resource Engine Unit Tests', () => {
     const user = await createTestUser();
     const resource1 = await createTestResource();
 
-    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100 });
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id }
-    });
+    const lot = await createResourceLot({ organizationId: org1.id, resourceId: resource1.id, quantity: 100, notes: '' });
+    const need = await createTestNeed({ organizationId: org2.id, resourceId: resource1.id, quantity: 50, createdById: user.id });
 
     const offer = await createResourceOffer({
       needId: need.id, offeringOrganizationId: org1.id, resourceLotId: lot.id, offeredQuantity: 50, createdById: user.id

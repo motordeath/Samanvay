@@ -1,6 +1,6 @@
 import { prisma } from '../../prisma';
 import { clearDatabase } from '../helpers/clearDatabase';
-import { createTestOrganization, createTestUser, createTestResource } from '../helpers/testFactory';
+import { createTestOrganization, createTestUser, createTestResource, createTestNeed } from '../helpers/testFactory';
 import { createResourceLot } from '../../services/resource-lot.service';
 import { createResourceOffer, acceptOffer, rejectOffer, withdrawOffer } from '../../services/resource-offer.service';
 import { updateTransferStatus } from '../../services/transfer.service';
@@ -25,14 +25,12 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
 
-    const lotA = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 40 });
+    const lotA = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 40, notes: '' });
     const offerA = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lotA.id, offeredQuantity: 40, createdById: user.id });
 
-    const lotB = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 60 });
+    const lotB = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 60, notes: '' });
     const offerB = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lotB.id, offeredQuantity: 60, createdById: user.id });
 
     const transferA = await acceptOffer(offerA.id, hopeOrg.id, user.id);
@@ -58,10 +56,8 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100 });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
     await expect(acceptOffer(offer.id, randomOrg.id, user.id)).rejects.toThrow('Only the organization that created the ResourceNeed may accept');
@@ -83,10 +79,8 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100 });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
     await acceptOffer(offer.id, hopeOrg.id, user.id);
@@ -106,12 +100,10 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lotA = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 40 });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lotA = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 40, notes: '' });
     const offerA = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lotA.id, offeredQuantity: 40, createdById: user.id });
-    const lotB = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 60 });
+    const lotB = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 60, notes: '' });
     const offerB = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lotB.id, offeredQuantity: 60, createdById: user.id });
 
     await cancelResourceNeed(need.id);
@@ -133,12 +125,10 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
     await cancelResourceNeed(need.id);
 
-    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100 });
+    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     await expect(createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id })).rejects.toThrow('Cannot create offer for a cancelled need.');
 
     const offers = await prisma.resourceOffer.findMany({ where: { needId: need.id } });
@@ -152,10 +142,8 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100 });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
     await withdrawOffer(offer.id);
@@ -179,10 +167,8 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 500 });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 500, notes: '' });
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
     const transfer = await acceptOffer(offer.id, hopeOrg.id, user.id);
@@ -204,10 +190,8 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 500 });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 500, notes: '' });
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
     const transfer = await acceptOffer(offer.id, hopeOrg.id, user.id);
@@ -227,15 +211,13 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lotA = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100 });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lotA = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     const offerA = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lotA.id, offeredQuantity: 80, createdById: user.id });
 
     await acceptOffer(offerA.id, hopeOrg.id, user.id);
 
-    const lotB = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100 });
+    const lotB = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     const offerB = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lotB.id, offeredQuantity: 50, createdById: user.id });
 
     await expect(acceptOffer(offerB.id, hopeOrg.id, user.id)).rejects.toThrow('Cannot exceed remaining need quantity');
@@ -251,10 +233,8 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100 });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
     // COMPLETED -> anything is forbidden
@@ -265,10 +245,8 @@ describe('Resource Engine Verification Pack', () => {
     await expect(updateTransferStatus(transfer1.id, 'PENDING')).rejects.toThrow('Invalid state transition');
 
     // CANCELLED -> anything is forbidden
-    const need2 = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lot2 = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100 });
+    const need2 = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lot2 = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     const offer2 = await createResourceOffer({ needId: need2.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot2.id, offeredQuantity: 100, createdById: user.id });
 
     const transfer2 = await acceptOffer(offer2.id, hopeOrg.id, user.id);
@@ -284,10 +262,8 @@ describe('Resource Engine Verification Pack', () => {
     const user = await createTestUser();
     const resource = await createTestResource();
 
-    const need = await prisma.resourceNeed.create({
-      data: { organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id }
-    });
-    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100 });
+    const need = await createTestNeed({ organizationId: hopeOrg.id, resourceId: resource.id, quantity: 100, createdById: user.id });
+    const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
 
     // ACCEPTED -> PENDING is forbidden (covered in Double Acceptance)
     const offer1 = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 10, createdById: user.id });

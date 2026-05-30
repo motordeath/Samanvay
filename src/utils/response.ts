@@ -8,6 +8,8 @@ export function createSuccessResponse<T>(data: T) {
 export function createErrorResponse(message: string) {
   return {
     success: false,
-    message,
+    error: {
+      message,
+    },
   };
 }
