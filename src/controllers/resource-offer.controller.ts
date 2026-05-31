@@ -61,13 +61,13 @@ export async function getResourceOfferController(req: Request, res: Response, ne
 export async function acceptOfferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const { organizationId, userId } = req.body;
+    const { organizationId } = req.body;
     
-    if (!organizationId || !userId) {
-      return res.status(400).json({ success: false, error: { message: 'organizationId and userId are required in body' } });
+    if (!organizationId) {
+      return res.status(400).json({ success: false, error: { message: 'organizationId is required in body' } });
     }
 
-    const transfer = await acceptOffer(id, organizationId, userId);
+    const transfer = await acceptOffer(id, organizationId, req.user!.id);
 
     await safeAudit(() =>
       createAuditLog({

@@ -1,5 +1,5 @@
 import { prisma } from '../prisma';
-import { Membership } from '@prisma/client';
+import { Membership, Transfer, Partnership } from '@prisma/client';
 
 export async function getMembership(userId: string, organizationId: string): Promise<Membership | null> {
   return prisma.membership.findUnique({
@@ -38,4 +38,42 @@ export async function requireRole(userId: string, organizationId: string, allowe
   if (!allowedRoles.includes(membership.role)) {
     throw new Error('Insufficient permissions');
   }
+}
+
+export async function requireTransferAccess(userId: string, transferId: string): Promise<Transfer> {
+  const transfer = await prisma.transfer.findUnique({
+    where: { id: transferId },
+  });
+
+  if (!transfer) {
+    throw new Error('Transfer not found');
+  }
+
+  const membershipFrom = await getMembership(userId, transfer.fromOrganizationId);
+  const membershipTo = await getMembership(userId, transfer.toOrganizationId);
+
+  if (!membershipFrom && !membershipTo) {
+    throw new Error('Access denied for transfer');
+  }
+
+  return transfer;
+}
+
+export async function requirePartnershipAccess(userId: string, partnershipId: string): Promise<Partnership> {
+  const partnership = await prisma.partnership.findUnique({
+    where: { id: partnershipId },
+  });
+
+  if (!partnership) {
+    throw new Error('Partnership not found');
+  }
+
+  const membershipReq = await getMembership(userId, partnership.requestingOrganizationId);
+  const membershipTarget = await getMembership(userId, partnership.targetOrganizationId);
+
+  if (!membershipReq && !membershipTarget) {
+    throw new Error('Access denied for partnership');
+  }
+
+  return partnership;
 }

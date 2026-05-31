@@ -6,7 +6,7 @@ const router = Router();
 import { authenticate } from '../middleware/auth.middleware';
 import { requireOrganizationRole } from '../middleware/authorization.middleware';
 
-router.post('/', createResourceOfferController);
+router.post('/', authenticate, requireOrganizationRole(['OWNER', 'ADMIN', 'COORDINATOR']), createResourceOfferController);
 router.get('/', getResourceOffersController);
 router.get('/:id', getResourceOfferController);
 
