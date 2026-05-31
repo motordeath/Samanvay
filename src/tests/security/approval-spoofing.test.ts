@@ -32,8 +32,8 @@ describe('Approval Identity Spoofing (CRIT-07)', () => {
     const userA = await createTestUser(); // Authentic User (Approver)
     const userB = await createTestUser(); // Spoofed User
 
-    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER' } });
-    await prisma.membership.create({ data: { userId: userB.id, organizationId: orgA.id, role: 'OWNER' } });
+    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER', status: 'ACTIVE' } });
+    await prisma.membership.create({ data: { userId: userB.id, organizationId: orgA.id, role: 'OWNER', status: 'ACTIVE' } });
 
     const resource = await createTestResource();
     const need = await createTestNeed({

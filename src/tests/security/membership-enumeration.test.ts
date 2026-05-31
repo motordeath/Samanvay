@@ -23,7 +23,7 @@ describe('Membership Enumeration Protection (HIGH-03)', () => {
   it('allows access for a user who is a member of the organization', async () => {
     const orgA = await createTestOrganization();
     const userA = await createTestUser();
-    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'VOLUNTEER' } });
+    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'VOLUNTEER', status: 'ACTIVE' } });
 
     const token = generateToken(userA.id);
 
@@ -43,7 +43,7 @@ describe('Membership Enumeration Protection (HIGH-03)', () => {
     // User B belongs to Org B only
     const orgB = await createTestOrganization();
     const userB = await createTestUser();
-    await prisma.membership.create({ data: { userId: userB.id, organizationId: orgB.id, role: 'OWNER' } });
+    await prisma.membership.create({ data: { userId: userB.id, organizationId: orgB.id, role: 'OWNER', status: 'ACTIVE' } });
 
     const token = generateToken(userB.id);
 

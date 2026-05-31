@@ -53,7 +53,7 @@ describe('Partnership Route Protection (CRIT-05A)', () => {
         const org = await createTestOrganization();
         const targetOrg = await createTestOrganization();
         const user = await createTestUser();
-        await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role } });
+        await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role, status: 'ACTIVE' } });
         const token = generateToken(user.id);
 
         const resPost = await request(app)
@@ -83,7 +83,7 @@ describe('Partnership Route Protection (CRIT-05A)', () => {
         const org = await createTestOrganization();
         const targetOrg = await createTestOrganization();
         const user = await createTestUser();
-        await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role } });
+        await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role, status: 'ACTIVE' } });
         const token = generateToken(user.id);
 
         const resPost = await request(app)

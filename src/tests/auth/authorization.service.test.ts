@@ -54,6 +54,7 @@ describe('Authorization Service', () => {
         userId: user.id,
         organizationId: org.id,
         role: 'ADMIN',
+        status: 'ACTIVE',
       }
     });
 
@@ -70,6 +71,7 @@ describe('Authorization Service', () => {
         userId: user.id,
         organizationId: org.id,
         role: 'VIEWER',
+        status: 'ACTIVE',
       }
     });
 
@@ -101,6 +103,7 @@ describe('Authorization Service', () => {
         userId: user.id,
         organizationId: org.id,
         role: 'VIEWER',
+        status: 'ACTIVE',
       }
     });
 
@@ -116,6 +119,7 @@ describe('Authorization Service', () => {
         userId: user.id,
         organizationId: org.id,
         role: 'ADMIN',
+        status: 'ACTIVE',
       }
     });
 

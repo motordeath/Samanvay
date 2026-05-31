@@ -30,7 +30,7 @@ describe('Audit API', () => {
       data: { name: `Org-${randomUUID()}`, type: 'NGO', sector: 'Relief' },
     });
     if (role) {
-      await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role } });
+      await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role, status: 'ACTIVE' } });
     }
     return { token, org, user };
   };

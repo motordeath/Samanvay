@@ -188,6 +188,6 @@ describe('Resource Offer Withdrawal Ownership Validation (HIGH-08)', () => {
       .send({}); // Missing organizationId
 
     expect(res.status).toBe(400);
-    expect(res.body.error.message).toContain('organizationId is required');
+    expect(res.body.error.message).toContain('Organization context required');
   });
 });

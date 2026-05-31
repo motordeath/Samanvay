@@ -24,7 +24,7 @@ describe('Organization Ownership Validation (HIGH-01)', () => {
     // Org A and User A (OWNER of Org A)
     const orgA = await createTestOrganization();
     const userA = await createTestUser();
-    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER' } });
+    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER', status: 'ACTIVE' } });
 
     const token = generateToken(userA.id);
 
@@ -50,7 +50,7 @@ describe('Organization Ownership Validation (HIGH-01)', () => {
     // Org B and User B (OWNER of Org B only)
     const orgB = await createTestOrganization();
     const userB = await createTestUser();
-    await prisma.membership.create({ data: { userId: userB.id, organizationId: orgB.id, role: 'OWNER' } });
+    await prisma.membership.create({ data: { userId: userB.id, organizationId: orgB.id, role: 'OWNER', status: 'ACTIVE' } });
 
     const token = generateToken(userB.id);
 
@@ -73,7 +73,7 @@ describe('Organization Ownership Validation (HIGH-01)', () => {
   it('returns 404 for a missing organization', async () => {
     const orgA = await createTestOrganization();
     const userA = await createTestUser();
-    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER' } });
+    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER', status: 'ACTIVE' } });
 
     const token = generateToken(userA.id);
     const nonExistentOrgId = '00000000-0000-0000-0000-000000000000';

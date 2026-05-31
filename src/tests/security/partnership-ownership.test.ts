@@ -27,7 +27,7 @@ describe('Partnership Ownership & Identity Hardening (CRIT-05B)', () => {
       const userA = await createTestUser();
       const userB = await createTestUser();
 
-      await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER' } });
+      await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER', status: 'ACTIVE' } });
 
       const token = generateToken(userA.id);
 
@@ -59,7 +59,7 @@ describe('Partnership Ownership & Identity Hardening (CRIT-05B)', () => {
       const orgB = await createTestOrganization();
       const userA = await createTestUser();
 
-      await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER' } });
+      await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER', status: 'ACTIVE' } });
 
       const partnership = await prisma.partnership.create({
         data: {
@@ -91,7 +91,7 @@ describe('Partnership Ownership & Identity Hardening (CRIT-05B)', () => {
       const userB = await createTestUser();
       const userA = await createTestUser();
 
-      await prisma.membership.create({ data: { userId: userB.id, organizationId: orgB.id, role: 'OWNER' } });
+      await prisma.membership.create({ data: { userId: userB.id, organizationId: orgB.id, role: 'OWNER', status: 'ACTIVE' } });
 
       const partnership = await prisma.partnership.create({
         data: {
@@ -124,7 +124,7 @@ describe('Partnership Ownership & Identity Hardening (CRIT-05B)', () => {
       const userA = await createTestUser();
       const userC = await createTestUser();
 
-      await prisma.membership.create({ data: { userId: userC.id, organizationId: orgC.id, role: 'OWNER' } });
+      await prisma.membership.create({ data: { userId: userC.id, organizationId: orgC.id, role: 'OWNER', status: 'ACTIVE' } });
 
       const partnership = await prisma.partnership.create({
         data: {
@@ -153,7 +153,7 @@ describe('Partnership Ownership & Identity Hardening (CRIT-05B)', () => {
       const orgA = await createTestOrganization();
       const userA = await createTestUser();
 
-      await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER' } });
+      await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'OWNER', status: 'ACTIVE' } });
 
       const token = generateToken(userA.id);
       const fakeId = '00000000-0000-0000-0000-000000000000';

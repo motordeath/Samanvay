@@ -50,7 +50,7 @@ describe('API Smoke Tests - Resource Coordination Engine', () => {
 
   // Helper: make a user a member of an org with a given role
   const makeMember = async (userId: string, organizationId: string, role = 'ADMIN') => {
-    await prisma.membership.create({ data: { userId, organizationId, role } });
+    await prisma.membership.create({ data: { userId, organizationId, role, status: 'ACTIVE' } });
   };
 
   // ---------------------------------------------------------------------------

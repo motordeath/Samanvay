@@ -46,7 +46,7 @@ describe('Admin Route Protection — Phase 3.3.2', () => {
     });
 
   const joinOrg = async (userId: string, organizationId: string, role: string) =>
-    prisma.membership.create({ data: { userId, organizationId, role } });
+    prisma.membership.create({ data: { userId, organizationId, role, status: 'ACTIVE' } });
 
   /** Register user + create org + optionally join with given role. */
   const setupAuth = async (role: string | null = null) => {

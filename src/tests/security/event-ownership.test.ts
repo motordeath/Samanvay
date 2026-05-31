@@ -24,7 +24,7 @@ describe('Event Ownership Validation (HIGH-02)', () => {
     // Org A and User A (COORDINATOR of Org A)
     const orgA = await createTestOrganization();
     const userA = await createTestUser();
-    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'COORDINATOR' } });
+    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'COORDINATOR', status: 'ACTIVE' } });
 
     // Event A belongs to Org A
     const eventA = await prisma.event.create({
@@ -61,7 +61,7 @@ describe('Event Ownership Validation (HIGH-02)', () => {
 
     // User A
     const userA = await createTestUser();
-    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'COORDINATOR' } });
+    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'COORDINATOR', status: 'ACTIVE' } });
 
     // Event A belongs to Org A
     const eventA = await prisma.event.create({
@@ -79,7 +79,7 @@ describe('Event Ownership Validation (HIGH-02)', () => {
     // Org B and User B (COORDINATOR of Org B only)
     const orgB = await createTestOrganization();
     const userB = await createTestUser();
-    await prisma.membership.create({ data: { userId: userB.id, organizationId: orgB.id, role: 'COORDINATOR' } });
+    await prisma.membership.create({ data: { userId: userB.id, organizationId: orgB.id, role: 'COORDINATOR', status: 'ACTIVE' } });
 
     const token = generateToken(userB.id);
 
@@ -102,7 +102,7 @@ describe('Event Ownership Validation (HIGH-02)', () => {
   it('returns 404 for a missing event', async () => {
     const orgA = await createTestOrganization();
     const userA = await createTestUser();
-    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'COORDINATOR' } });
+    await prisma.membership.create({ data: { userId: userA.id, organizationId: orgA.id, role: 'COORDINATOR', status: 'ACTIVE' } });
 
     const token = generateToken(userA.id);
     const nonExistentEventId = '00000000-0000-0000-0000-000000000000';

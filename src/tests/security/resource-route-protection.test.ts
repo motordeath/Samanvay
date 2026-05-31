@@ -77,7 +77,7 @@ describe('Resource Workflow Route Protection (CRIT-04)', () => {
       it(`allows ${role} to create resources, lots, needs, and offers`, async () => {
         const org = await createTestOrganization();
         const user = await createTestUser();
-        await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role } });
+        await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role, status: 'ACTIVE' } });
         const token = generateToken(user.id);
 
         const resResource = await request(app)
@@ -118,7 +118,7 @@ describe('Resource Workflow Route Protection (CRIT-04)', () => {
       it(`denies ${role} from creating lots, needs, and offers, but allows resources`, async () => {
         const org = await createTestOrganization();
         const user = await createTestUser();
-        await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role } });
+        await prisma.membership.create({ data: { userId: user.id, organizationId: org.id, role, status: 'ACTIVE' } });
         const token = generateToken(user.id);
 
         // POST /api/resources has authenticate only, no role restriction

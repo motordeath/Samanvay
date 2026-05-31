@@ -57,6 +57,7 @@ describe('Authorization Middleware', () => {
         userId: user.id,
         organizationId: org.id,
         role: 'ADMIN',
+        status: 'ACTIVE',
       }
     });
 
@@ -87,6 +88,7 @@ describe('Authorization Middleware', () => {
         userId: user.id,
         organizationId: org.id,
         role: 'VIEWER',
+        status: 'ACTIVE',
       }
     });
 
