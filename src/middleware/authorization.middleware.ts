@@ -121,3 +121,117 @@ export function requirePartnershipOwnership() {
     }
   };
 }
+
+export function requireOrganizationAccess() {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: { message: 'Authentication required' }
+        });
+      }
+
+      const organizationId = req.params.id;
+      if (!organizationId) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Organization ID required' }
+        });
+      }
+
+      const authService = await import('../services/authorization.service');
+      await authService.requireOrganizationAccess(user.id, organizationId);
+      next();
+    } catch (error: any) {
+      if (error.message === 'Access denied for organization') {
+        return res.status(403).json({
+          success: false,
+          error: { message: 'Access denied for organization' }
+        });
+      }
+      if (error.message === 'Organization not found') {
+        return res.status(404).json({
+          success: false,
+          error: { message: 'Organization not found' }
+        });
+      }
+      next(error);
+    }
+  };
+}
+
+export function requireEventAccess() {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: { message: 'Authentication required' }
+        });
+      }
+
+      const eventId = req.params.id;
+      if (!eventId) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Event ID required' }
+        });
+      }
+
+      const authService = await import('../services/authorization.service');
+      await authService.requireEventAccess(user.id, eventId);
+      next();
+    } catch (error: any) {
+      if (error.message === 'Access denied for event') {
+        return res.status(403).json({
+          success: false,
+          error: { message: 'Access denied for event' }
+        });
+      }
+      if (error.message === 'Event not found') {
+        return res.status(404).json({
+          success: false,
+          error: { message: 'Event not found' }
+        });
+      }
+      next(error);
+    }
+  };
+}
+
+export function requireMembershipAccess() {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: { message: 'Authentication required' }
+        });
+      }
+
+      const organizationId = req.params.id;
+      if (!organizationId) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Organization ID required' }
+        });
+      }
+
+      const authService = await import('../services/authorization.service');
+      await authService.requireMembershipAccess(user.id, organizationId);
+      next();
+    } catch (error: any) {
+      if (error.message === 'Access denied for organization members') {
+        return res.status(403).json({
+          success: false,
+          error: { message: 'Access denied for organization members' }
+        });
+      }
+      next(error);
+    }
+  };
+}

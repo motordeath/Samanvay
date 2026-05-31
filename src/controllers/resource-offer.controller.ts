@@ -67,7 +67,8 @@ export async function acceptOfferController(req: AuthRequest, res: Response, nex
       return res.status(400).json({ success: false, error: { message: 'organizationId is required in body' } });
     }
 
-    const transfer = await acceptOffer(id, organizationId, req.user!.id);
+    const result = await acceptOffer(id, organizationId, req.user!.id);
+    const transfer = result.transfer;
 
     await safeAudit(() =>
       createAuditLog({
@@ -75,7 +76,7 @@ export async function acceptOfferController(req: AuthRequest, res: Response, nex
         entityType: 'RESOURCE_OFFER',
         entityId: id,
         userId: req.user?.id,
-        organizationId,
+        organizationId: result.organizationId,
       })
     );
 
@@ -94,7 +95,8 @@ export async function rejectOfferController(req: AuthRequest, res: Response, nex
       return res.status(400).json({ success: false, error: { message: 'organizationId is required in body' } });
     }
 
-    const offer = await rejectOffer(id, organizationId);
+    const result = await rejectOffer(id, organizationId);
+    const offer = result.offer;
 
     await safeAudit(() =>
       createAuditLog({
@@ -102,7 +104,7 @@ export async function rejectOfferController(req: AuthRequest, res: Response, nex
         entityType: 'RESOURCE_OFFER',
         entityId: offer.id,
         userId: req.user?.id,
-        organizationId,
+        organizationId: result.organizationId,
       })
     );
 
@@ -115,7 +117,13 @@ export async function rejectOfferController(req: AuthRequest, res: Response, nex
 export async function withdrawOfferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const offer = await withdrawOffer(id);
+    const { organizationId } = req.body;
+    
+    if (!organizationId) {
+      return res.status(400).json({ success: false, error: { message: 'organizationId is required in body' } });
+    }
+
+    const offer = await withdrawOffer(id, organizationId);
 
     await safeAudit(() =>
       createAuditLog({
@@ -128,7 +136,10 @@ export async function withdrawOfferController(req: AuthRequest, res: Response, n
     );
 
     res.status(200).json(createSuccessResponse(offer));
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Only the offering organization may withdraw the offer.') {
+      return res.status(403).json({ success: false, error: { message: error.message } });
+    }
     next(error);
   }
 }

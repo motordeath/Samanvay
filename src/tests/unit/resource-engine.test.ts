@@ -99,7 +99,7 @@ describe('Resource Engine Unit Tests', () => {
       needId: need.id, offeringOrganizationId: org1.id, resourceLotId: lot.id, offeredQuantity: 40, createdById: user.id
     });
 
-    const transfer = await acceptOffer(offer.id, org2.id, user.id);
+    const { transfer } = await acceptOffer(offer.id, org2.id, user.id);
 
     // Inventory should be 60 now
     let updatedLot = await prisma.resourceLot.findUnique({ where: { id: lot.id } });
@@ -145,7 +145,7 @@ describe('Resource Engine Unit Tests', () => {
       needId: need.id, offeringOrganizationId: org1.id, resourceLotId: lot.id, offeredQuantity: 10, createdById: user.id
     });
 
-    const transfer = await acceptOffer(offer.id, org2.id, user.id);
+    const { transfer } = await acceptOffer(offer.id, org2.id, user.id);
     await updateTransferStatus(transfer.id, 'IN_TRANSIT');
     await updateTransferStatus(transfer.id, 'COMPLETED');
 
@@ -166,7 +166,7 @@ describe('Resource Engine Unit Tests', () => {
       needId: need.id, offeringOrganizationId: org1.id, resourceLotId: lot.id, offeredQuantity: 50, createdById: user.id
     });
 
-    const transfer = await acceptOffer(offer.id, org2.id, user.id);
+    const { transfer } = await acceptOffer(offer.id, org2.id, user.id);
     await updateTransferStatus(transfer.id, 'IN_TRANSIT');
 
     // Status is still OPEN because transfer is IN_TRANSIT

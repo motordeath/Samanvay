@@ -45,7 +45,8 @@ export async function getTransferController(req: Request, res: Response, next: N
 export async function completeTransferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const transfer = await updateTransferStatus(id, 'COMPLETED');
+    const result = await updateTransferStatus(id, 'COMPLETED');
+    const transfer = result.transfer;
 
     await safeAudit(() =>
       createAuditLog({
@@ -55,8 +56,8 @@ export async function completeTransferController(req: AuthRequest, res: Response
         userId: req.user?.id,
         organizationId: transfer.toOrganizationId,
         metadata: {
-          previousStatus: 'IN_TRANSIT',
-          newStatus: 'COMPLETED'
+          previousStatus: result.previousStatus,
+          newStatus: result.newStatus
         }
       })
     );
@@ -70,7 +71,8 @@ export async function completeTransferController(req: AuthRequest, res: Response
 export async function cancelTransferController(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const transfer = await updateTransferStatus(id, 'CANCELLED');
+    const result = await updateTransferStatus(id, 'CANCELLED');
+    const transfer = result.transfer;
 
     await safeAudit(() =>
       createAuditLog({
@@ -80,8 +82,8 @@ export async function cancelTransferController(req: AuthRequest, res: Response, 
         userId: req.user?.id,
         organizationId: transfer.toOrganizationId,
         metadata: {
-          previousStatus: 'PENDING',
-          newStatus: 'CANCELLED'
+          previousStatus: result.previousStatus,
+          newStatus: result.newStatus
         }
       })
     );
@@ -94,10 +96,11 @@ export async function cancelTransferController(req: AuthRequest, res: Response, 
 
 export const startTransfer = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const transfer = await updateTransferStatus(
+    const result = await updateTransferStatus(
       req.params.id,
       'IN_TRANSIT'
     );
+    const transfer = result.transfer;
 
     return res.json({
       success: true,

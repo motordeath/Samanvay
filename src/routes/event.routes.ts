@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as eventController from '../controllers/event.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { requireOrganizationRole } from '../middleware/authorization.middleware';
+import { requireOrganizationRole, requireEventAccess } from '../middleware/authorization.middleware';
 
 const router = Router();
 
@@ -22,6 +22,7 @@ router.post(
 router.patch(
   '/:id',
   authenticate,
+  requireEventAccess(),
   requireOrganizationRole(['OWNER', 'ADMIN', 'COORDINATOR']),
   eventController.update
 );

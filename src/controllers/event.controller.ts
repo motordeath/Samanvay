@@ -29,7 +29,11 @@ export async function create(req: AuthRequest, res: Response, next: NextFunction
 
 export async function getAll(req: Request, res: Response, next: NextFunction) {
   try {
-    const events = await eventService.getEvents();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const events = await eventService.getEvents(skip, limit);
     res.json(createSuccessResponse(events));
   } catch (error) {
     next(error);

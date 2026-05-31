@@ -33,14 +33,14 @@ describe('Resource Engine Verification Pack', () => {
     const lotB = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 60, notes: '' });
     const offerB = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lotB.id, offeredQuantity: 60, createdById: user.id });
 
-    const transferA = await acceptOffer(offerA.id, hopeOrg.id, user.id);
+    const { transfer: transferA } = await acceptOffer(offerA.id, hopeOrg.id, user.id);
     await updateTransferStatus(transferA.id, 'IN_TRANSIT');
     await updateTransferStatus(transferA.id, 'COMPLETED');
 
     let updatedNeed = await prisma.resourceNeed.findUnique({ where: { id: need.id } });
     expect(updatedNeed?.status).toBe('PARTIALLY_FULFILLED');
 
-    const transferB = await acceptOffer(offerB.id, hopeOrg.id, user.id);
+    const { transfer: transferB } = await acceptOffer(offerB.id, hopeOrg.id, user.id);
     await updateTransferStatus(transferB.id, 'IN_TRANSIT');
     await updateTransferStatus(transferB.id, 'COMPLETED');
 
@@ -146,7 +146,7 @@ describe('Resource Engine Verification Pack', () => {
     const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
-    await withdrawOffer(offer.id);
+    await withdrawOffer(offer.id, helpingOrg.id);
 
     const updatedOffer = await prisma.resourceOffer.findUnique({ where: { id: offer.id } });
     expect(updatedOffer?.status).toBe('WITHDRAWN');
@@ -171,7 +171,7 @@ describe('Resource Engine Verification Pack', () => {
     const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 500, notes: '' });
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
-    const transfer = await acceptOffer(offer.id, hopeOrg.id, user.id);
+    const { transfer } = await acceptOffer(offer.id, hopeOrg.id, user.id);
 
     let updatedLot = await prisma.resourceLot.findUnique({ where: { id: lot.id } });
     expect(updatedLot?.availableQuantity).toBe(400);
@@ -194,7 +194,7 @@ describe('Resource Engine Verification Pack', () => {
     const lot = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 500, notes: '' });
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
-    const transfer = await acceptOffer(offer.id, hopeOrg.id, user.id);
+    const { transfer } = await acceptOffer(offer.id, hopeOrg.id, user.id);
     let updatedLot = await prisma.resourceLot.findUnique({ where: { id: lot.id } });
     expect(updatedLot?.availableQuantity).toBe(400);
 
@@ -238,7 +238,7 @@ describe('Resource Engine Verification Pack', () => {
     const offer = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 100, createdById: user.id });
 
     // COMPLETED -> anything is forbidden
-    const transfer1 = await acceptOffer(offer.id, hopeOrg.id, user.id);
+    const { transfer: transfer1 } = await acceptOffer(offer.id, hopeOrg.id, user.id);
     await updateTransferStatus(transfer1.id, 'IN_TRANSIT');
     await updateTransferStatus(transfer1.id, 'COMPLETED');
     await expect(updateTransferStatus(transfer1.id, 'CANCELLED')).rejects.toThrow('Invalid state transition');
@@ -249,7 +249,7 @@ describe('Resource Engine Verification Pack', () => {
     const lot2 = await createResourceLot({ organizationId: helpingOrg.id, resourceId: resource.id, quantity: 100, notes: '' });
     const offer2 = await createResourceOffer({ needId: need2.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot2.id, offeredQuantity: 100, createdById: user.id });
 
-    const transfer2 = await acceptOffer(offer2.id, hopeOrg.id, user.id);
+    const { transfer: transfer2 } = await acceptOffer(offer2.id, hopeOrg.id, user.id);
     await updateTransferStatus(transfer2.id, 'CANCELLED');
     await expect(updateTransferStatus(transfer2.id, 'PENDING')).rejects.toThrow('Invalid state transition');
     await expect(updateTransferStatus(transfer2.id, 'COMPLETED')).rejects.toThrow('Invalid state transition');
@@ -277,7 +277,7 @@ describe('Resource Engine Verification Pack', () => {
 
     // WITHDRAWN -> PENDING is forbidden
     const offer3 = await createResourceOffer({ needId: need.id, offeringOrganizationId: helpingOrg.id, resourceLotId: lot.id, offeredQuantity: 10, createdById: user.id });
-    await withdrawOffer(offer3.id);
+    await withdrawOffer(offer3.id, helpingOrg.id);
     await expect(acceptOffer(offer3.id, hopeOrg.id, user.id)).rejects.toThrow(/Cannot transition from WITHDRAWN to ACCEPTED/);
   });
 });

@@ -71,7 +71,11 @@ export async function updateTransferStatus(transferId: string, newStatus: string
       }
     }
 
-    return updatedTransfer;
+    return {
+      transfer: updatedTransfer,
+      previousStatus: transfer.status,
+      newStatus,
+    };
   }, { timeout: 30000 }); // match jest.setTimeout to prevent stale transaction errors
 }
 

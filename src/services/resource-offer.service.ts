@@ -110,7 +110,10 @@ export async function acceptOffer(offerId: string, actioningOrganizationId: stri
       },
     });
 
-    return transfer;
+    return {
+      transfer,
+      organizationId: offer.need.organizationId,
+    };
   }, { timeout: 30000 });
 }
 
@@ -130,17 +133,26 @@ export async function rejectOffer(offerId: string, actioningOrganizationId: stri
   }
 
   // Invariant 7: Offer rejection changes no inventory
-  return await prisma.resourceOffer.update({
+  const updatedOffer = await prisma.resourceOffer.update({
     where: { id: offerId },
     data: { status: 'REJECTED' },
   });
+
+  return {
+    offer: updatedOffer,
+    organizationId: offer.need.organizationId,
+  };
 }
 
-export async function withdrawOffer(offerId: string) {
+export async function withdrawOffer(offerId: string, actioningOrganizationId: string) {
   const offer = await prisma.resourceOffer.findUnique({
     where: { id: offerId },
   });
   if (!offer) throw new Error('Offer not found');
+
+  if (offer.offeringOrganizationId !== actioningOrganizationId) {
+    throw new Error('Only the offering organization may withdraw the offer.');
+  }
 
   if (offer.status !== 'PENDING') {
     throw new Error(`Cannot transition from ${offer.status} to WITHDRAWN`);

@@ -57,7 +57,7 @@ describe('Resource Engine Integration Scenario', () => {
     expect(offer.status).toBe('PENDING');
 
     // Step 4: Hope Foundation accepts Offer
-    const transfer = await acceptOffer(offer.id, hopeFoundation.id, adminUser.id);
+    const { transfer } = await acceptOffer(offer.id, hopeFoundation.id, adminUser.id);
 
     // Verify reservation happened
     const updatedLot = await prisma.resourceLot.findUnique({ where: { id: lot.id } });
@@ -70,7 +70,7 @@ describe('Resource Engine Integration Scenario', () => {
 
     // Step 6: Transfer completed (needs to go through IN_TRANSIT first per invariant 15)
     await updateTransferStatus(transfer.id, 'IN_TRANSIT');
-    const completedTransfer = await updateTransferStatus(transfer.id, 'COMPLETED');
+    const { transfer: completedTransfer } = await updateTransferStatus(transfer.id, 'COMPLETED');
 
     expect(completedTransfer.status).toBe('COMPLETED');
 

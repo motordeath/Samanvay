@@ -31,7 +31,11 @@ export async function create(req: AuthRequest, res: Response, next: NextFunction
 export async function getOrganizationMembers(req: Request, res: Response, next: NextFunction) {
   try {
     const id = String(req.params.id);
-    const members = await membershipService.getOrganizationMembers(id);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const members = await membershipService.getOrganizationMembers(id, skip, limit);
     res.json(createSuccessResponse(members));
   } catch (error) {
     next(error);

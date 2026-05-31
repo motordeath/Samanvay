@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as orgController from '../controllers/organization.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { requireOrganizationRole } from '../middleware/authorization.middleware';
+import { requireOrganizationRole, requireOrganizationAccess } from '../middleware/authorization.middleware';
 
 const router = Router();
 
@@ -16,6 +16,7 @@ router.get('/:id', orgController.getById);
 router.patch(
   '/:id',
   authenticate,
+  requireOrganizationAccess(),
   requireOrganizationRole(['OWNER', 'ADMIN']),
   orgController.update
 );

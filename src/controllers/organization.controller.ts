@@ -18,7 +18,11 @@ export async function create(req: Request, res: Response, next: NextFunction) {
 
 export async function getAll(req: Request, res: Response, next: NextFunction) {
   try {
-    const orgs = await orgService.getOrganizations();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const orgs = await orgService.getOrganizations(skip, limit);
     res.json(createSuccessResponse(orgs));
   } catch (error) {
     next(error);
