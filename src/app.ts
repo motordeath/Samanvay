@@ -15,6 +15,17 @@ import resourceOfferRoutes from './routes/resource-offer.routes';
 import transferRoutes from './routes/transfer.routes';
 import auditRoutes from './routes/audit.routes';
 
+// Volunteer Engine imports
+import volunteerRoutes from './modules/volunteers/volunteer/routes';
+import skillRoutes from './modules/volunteers/skills/routes';
+import certificationRoutes from './modules/volunteers/certifications/routes';
+import availabilityRoutes from './modules/volunteers/availability/routes';
+import needRoutes from './modules/volunteers/needs/routes';
+import matchingRoutes from './modules/volunteers/matching/routes';
+import invitationRoutes from './modules/volunteers/invitations/routes';
+import assignmentRoutes from './modules/volunteers/assignments/routes';
+import attendanceRoutes from './modules/volunteers/attendance/routes';
+
 const app = express();
 
 app.use(express.json());
@@ -33,6 +44,18 @@ app.use('/api/offers', resourceOfferRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/audit', auditRoutes);
 
+// Volunteer Engine routes mounting
+app.use('/api/volunteers', volunteerRoutes);
+app.use('/api/skills', skillRoutes);
+app.use('/api/certifications', certificationRoutes);
+app.use('/api/availability', availabilityRoutes);
+app.use('/api/volunteer-needs', needRoutes);
+app.use('/api/matching', matchingRoutes);
+app.use('/api/invitations', invitationRoutes);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/attendance', attendanceRoutes);
+
 app.use(errorHandler);
 
 export default app;
+

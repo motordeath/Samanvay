@@ -207,3 +207,200 @@ model AuditLog {
   user         User?         @relation(fields: [userId], references: [id])
   organization Organization? @relation(fields: [organizationId], references: [id])
 }
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum VolunteerNeedStatus {
+  OPEN
+  FILLED
+  CLOSED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  CHECKED_IN
+  CHECKED_OUT
+  COMPLETED
+}
+
+model Volunteer {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  bio             String?
+  location        String?
+  experienceYears Int?
+  isAvailable     Boolean  @default(true)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  skills          VolunteerSkill[]
+  certifications  VolunteerCertification[]
+  availability    VolunteerAvailability[]
+  invitations     VolunteerInvitation[]
+  assignments     VolunteerAssignment[]
+}
+
+model Skill {
+  id              String   @id @default(uuid())
+  name            String   @unique
+  volunteers      VolunteerSkill[]
+  needSkills      VolunteerNeedSkill[]
+}
+
+model VolunteerSkill {
+  id          String     @id @default(uuid())
+  volunteerId String
+  skillId     String
+  level       SkillLevel
+
+  volunteer   Volunteer  @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
+  skill       Skill      @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([volunteerId, skillId])
+}
+
+model Certification {
+  id              String   @id @default(uuid())
+  name            String   @unique
+  volunteers      VolunteerCertification[]
+}
+
+model VolunteerCertification {
+  id              String        @id @default(uuid())
+  volunteerId     String
+  certificationId String
+  issuedAt        DateTime?
+  expiresAt       DateTime?
+
+  volunteer       Volunteer     @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
+  certification   Certification @relation(fields: [certificationId], references: [id], onDelete: Restrict)
+
+  @@unique([volunteerId, certificationId])
+}
+
+model VolunteerAvailability {
+  id          String    @id @default(uuid())
+  volunteerId String
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  isDeleted   Boolean   @default(false)
+
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
+}
+
+model VolunteerNeed {
+  id              String              @id @default(uuid())
+  organizationId  String
+  eventId         String?
+  title           String
+  description     String?
+  requiredCount   Int
+  location        String?
+  startDate       DateTime
+  endDate         DateTime
+  status          VolunteerNeedStatus @default(OPEN)
+  createdBy       String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  skills          VolunteerNeedSkill[]
+  invitations     VolunteerInvitation[]
+  assignments     VolunteerAssignment[]
+
+  @@index([status])
+  @@index([organizationId])
+}
+
+model VolunteerNeedSkill {
+  id            String      @id @default(uuid())
+  needId        String
+  skillId       String
+  requiredLevel SkillLevel
+
+  need          VolunteerNeed @relation(fields: [needId], references: [id], onDelete: Restrict)
+  skill         Skill         @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([needId, skillId])
+}
+
+model VolunteerInvitation {
+  id            String           @id @default(uuid())
+  volunteerId   String
+  needId        String
+  status        InvitationStatus @default(PENDING)
+  sentAt        DateTime         @default(now())
+  respondedAt   DateTime?
+  expiresAt     DateTime?
+  createdBy     String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  volunteer     Volunteer     @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
+  need          VolunteerNeed @relation(fields: [needId], references: [id], onDelete: Restrict)
+
+  @@unique([volunteerId, needId])
+  @@index([volunteerId])
+  @@index([needId])
+  @@index([status])
+}
+
+model VolunteerAssignment {
+  id            String           @id @default(uuid())
+  volunteerId   String
+  needId        String
+  status        AssignmentStatus @default(ASSIGNED)
+  assignedAt    DateTime         @default(now())
+  completedAt   DateTime?
+  createdBy     String
+
+  volunteer     Volunteer     @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
+  need          VolunteerNeed @relation(fields: [needId], references: [id], onDelete: Restrict)
+  attendance    VolunteerAttendance?
+
+  @@unique([volunteerId, needId])
+  @@index([volunteerId])
+  @@index([needId])
+  @@index([status])
+}
+
+model VolunteerAttendance {
+  id                 String              @id @default(uuid())
+  assignmentId       String              @unique
+  checkInTime        DateTime?
+  checkOutTime       DateTime?
+  verifiedBy         String?
+  verificationMethod String?
+
+  assignment         VolunteerAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+
+  @@index([assignmentId])
+}
+
+model VolunteerAudit {
+  id            String   @id @default(uuid())
+  volunteerId   String?
+  action        String
+  entityType    String
+  entityId      String
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}
+
