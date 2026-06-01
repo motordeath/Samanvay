@@ -82,11 +82,16 @@ export async function acceptOffer(offerId: string, actioningOrganizationId: stri
       throw new Error('Cannot exceed available inventory on offer.');
     }
 
-    // Update Offer Status
-    await tx.resourceOffer.update({
-      where: { id: offerId },
+    // Atomically claim the pending offer so concurrent acceptance requests
+    // cannot create multiple transfers from the same offer.
+    const offerUpdate = await tx.resourceOffer.updateMany({
+      where: { id: offerId, status: 'PENDING' },
       data: { status: 'ACCEPTED' },
     });
+
+    if (offerUpdate.count === 0) {
+      throw new Error('Cannot transition from PENDING to ACCEPTED');
+    }
 
     // Invariant 6: Offer acceptance reserves inventory
     await tx.resourceLot.update({
