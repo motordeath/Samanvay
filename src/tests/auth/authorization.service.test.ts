@@ -12,7 +12,25 @@ describe('Authorization Service', () => {
     await clearDatabase(prisma);
   });
 
-  it('getMembership returns membership if it exists', async () => {
+  it('getMembership returns null for inactive organization', async () => {
+    const user = await createTestUser();
+    const org = await createTestOrganization();
+    await prisma.organization.update({ where: { id: org.id }, data: { status: 'INACTIVE' } });
+    
+    await prisma.membership.create({
+      data: {
+        userId: user.id,
+        organizationId: org.id,
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      }
+    });
+
+    const membership = await getMembership(user.id, org.id);
+    expect(membership).toBeNull();
+  });
+
+  it('getMembership succeeds for active organization and active membership', async () => {
     const user = await createTestUser();
     const org = await createTestOrganization();
     
@@ -28,6 +46,23 @@ describe('Authorization Service', () => {
     const membership = await getMembership(user.id, org.id);
     expect(membership).toBeDefined();
     expect(membership?.role).toBe('ADMIN');
+  });
+
+  it('getMembership returns null for inactive membership', async () => {
+    const user = await createTestUser();
+    const org = await createTestOrganization();
+    
+    await prisma.membership.create({
+      data: {
+        userId: user.id,
+        organizationId: org.id,
+        role: 'ADMIN',
+        status: 'INACTIVE',
+      }
+    });
+
+    const membership = await getMembership(user.id, org.id);
+    expect(membership).toBeNull();
   });
 
   it('getMembership returns null if membership is missing', async () => {

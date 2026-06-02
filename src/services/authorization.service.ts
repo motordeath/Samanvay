@@ -9,9 +9,16 @@ export async function getMembership(userId: string, organizationId: string): Pro
         organizationId,
       },
     },
+    include: {
+      organization: true,
+    },
   });
 
-  if (!membership || membership.status !== 'ACTIVE') {
+  if (
+    !membership ||
+    membership.status !== 'ACTIVE' ||
+    (membership as any).organization.status !== 'ACTIVE'
+  ) {
     return null;
   }
 

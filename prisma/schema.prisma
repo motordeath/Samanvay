@@ -84,6 +84,7 @@ model Event {
   updatedAt      DateTime       @updatedAt
   organization   Organization   @relation(fields: [organizationId], references: [id])
   resourceNeeds  ResourceNeed[]
+  volunteerNeeds VolunteerNeed[]
 }
 
 model Resource {
@@ -316,6 +317,8 @@ model VolunteerNeed {
   createdBy       String
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
+
+  event           Event?              @relation(fields: [eventId], references: [id])
 
   skills          VolunteerNeedSkill[]
   invitations     VolunteerInvitation[]
