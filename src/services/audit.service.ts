@@ -10,8 +10,9 @@ export interface CreateAuditLogParams {
   metadata?: any;
 }
 
-export async function createAuditLog(params: CreateAuditLogParams) {
-  return await prisma.auditLog.create({
+export async function createAuditLog(params: CreateAuditLogParams, tx?: any) {
+  const client = tx || prisma;
+  return await client.auditLog.create({
     data: {
       action: params.action,
       userId: params.userId,

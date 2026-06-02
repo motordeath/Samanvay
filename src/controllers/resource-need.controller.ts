@@ -1,84 +1,41 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { createResourceNeedSchema } from '../schemas/resource.schema';
 import { createResourceNeed, getResourceNeeds, getNeedById, cancelResourceNeed } from '../services/resource-need.service';
 import { createSuccessResponse } from '../utils/response';
-import { safeAudit } from '../utils/safe-audit';
-import { createAuditLog } from '../services/audit.service';
-import { AuthRequest } from '../middleware/auth.middleware';
+import { asyncHandler } from '../middleware/asyncHandler';
+import { NotFoundError } from '../utils/errors';
 
-export async function createResourceNeedController(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const validatedData = createResourceNeedSchema.parse(req.body);
-    const need = await createResourceNeed(validatedData);
+export const createResourceNeedController = asyncHandler(async (req: Request, res: Response) => {
+  const validatedData = createResourceNeedSchema.parse(req.body);
+  const need = await createResourceNeed(validatedData);
+  res.status(201).json(createSuccessResponse(need));
+});
 
-    await safeAudit(() =>
-      createAuditLog({
-        action: 'RESOURCE_NEED_CREATED',
-        entityType: 'RESOURCE_NEED',
-        entityId: need.id,
-        userId: req.user?.id,
-        organizationId: need.organizationId,
-      })
-    );
+export const getResourceNeedsController = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const skip = (page - 1) * limit;
+  
+  const filters: any = {};
+  if (req.query.organizationId) filters.organizationId = req.query.organizationId;
+  if (req.query.status) filters.status = req.query.status;
+  if (req.query.resourceId) filters.resourceId = req.query.resourceId;
 
-    res.status(201).json(createSuccessResponse(need));
-  } catch (error) {
-    next(error);
+  const needs = await getResourceNeeds(filters, skip, limit);
+  res.status(200).json(createSuccessResponse(needs));
+});
+
+export const getResourceNeedController = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const need = await getNeedById(id);
+  if (!need) {
+    throw new NotFoundError('ResourceNeed not found');
   }
-}
+  res.status(200).json(createSuccessResponse(need));
+});
 
-export async function getResourceNeedsController(req: Request, res: Response, next: NextFunction) {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const skip = (page - 1) * limit;
-    
-    const filters: any = {};
-    if (req.query.organizationId) filters.organizationId = req.query.organizationId;
-    if (req.query.status) filters.status = req.query.status;
-    if (req.query.resourceId) filters.resourceId = req.query.resourceId;
-
-    const needs = await getResourceNeeds(filters, skip, limit);
-    res.status(200).json(createSuccessResponse(needs));
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function getResourceNeedController(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { id } = req.params;
-    const need = await getNeedById(id);
-    if (!need) {
-      return res.status(404).json({ success: false, error: { message: 'ResourceNeed not found' } });
-    }
-    res.status(200).json(createSuccessResponse(need));
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function cancelResourceNeedController(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const { id } = req.params;
-    const need = await cancelResourceNeed(id);
-
-    await safeAudit(() =>
-      createAuditLog({
-        action: 'RESOURCE_NEED_CANCELLED',
-        entityType: 'RESOURCE_NEED',
-        entityId: need.id,
-        userId: req.user?.id,
-        organizationId: need.organizationId,
-        metadata: {
-          previousStatus: 'OPEN',
-          newStatus: 'CANCELLED'
-        }
-      })
-    );
-
-    res.status(200).json(createSuccessResponse(need));
-  } catch (error) {
-    next(error);
-  }
-}
+export const cancelResourceNeedController = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const need = await cancelResourceNeed(id);
+  res.status(200).json(createSuccessResponse(need));
+});

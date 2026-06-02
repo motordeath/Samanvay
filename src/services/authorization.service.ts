@@ -53,7 +53,7 @@ export async function requireRole(userId: string, organizationId: string, allowe
   }
 }
 
-export async function requireTransferAccess(userId: string, transferId: string): Promise<Transfer> {
+export async function requireTransferAccess(userId: string, transferId: string, allowedRoles: string[]): Promise<Transfer> {
   const transfer = await prisma.transfer.findUnique({
     where: { id: transferId },
   });
@@ -65,14 +65,17 @@ export async function requireTransferAccess(userId: string, transferId: string):
   const membershipFrom = await getMembership(userId, transfer.fromOrganizationId);
   const membershipTo = await getMembership(userId, transfer.toOrganizationId);
 
-  if (!membershipFrom && !membershipTo) {
+  const validFrom = membershipFrom && allowedRoles.includes(membershipFrom.role);
+  const validTo = membershipTo && allowedRoles.includes(membershipTo.role);
+
+  if (!validFrom && !validTo) {
     throw new Error('Access denied for transfer');
   }
 
   return transfer;
 }
 
-export async function requirePartnershipAccess(userId: string, partnershipId: string): Promise<Partnership> {
+export async function requirePartnershipAccess(userId: string, partnershipId: string, allowedRoles: string[]): Promise<Partnership> {
   const partnership = await prisma.partnership.findUnique({
     where: { id: partnershipId },
   });
@@ -84,14 +87,17 @@ export async function requirePartnershipAccess(userId: string, partnershipId: st
   const membershipReq = await getMembership(userId, partnership.requestingOrganizationId);
   const membershipTarget = await getMembership(userId, partnership.targetOrganizationId);
 
-  if (!membershipReq && !membershipTarget) {
+  const validReq = membershipReq && allowedRoles.includes(membershipReq.role);
+  const validTarget = membershipTarget && allowedRoles.includes(membershipTarget.role);
+
+  if (!validReq && !validTarget) {
     throw new Error('Access denied for partnership');
   }
 
   return partnership;
 }
 
-export async function requireOrganizationAccess(userId: string, organizationId: string): Promise<void> {
+export async function requireOrganizationAccess(userId: string, organizationId: string, allowedRoles: string[]): Promise<void> {
   const organization = await prisma.organization.findUnique({
     where: { id: organizationId },
   });
@@ -101,12 +107,12 @@ export async function requireOrganizationAccess(userId: string, organizationId: 
   }
 
   const membership = await getMembership(userId, organizationId);
-  if (!membership) {
+  if (!membership || !allowedRoles.includes(membership.role)) {
     throw new Error('Access denied for organization');
   }
 }
 
-export async function requireEventAccess(userId: string, eventId: string): Promise<Event> {
+export async function requireEventAccess(userId: string, eventId: string, allowedRoles: string[]): Promise<Event> {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
   });
@@ -116,7 +122,7 @@ export async function requireEventAccess(userId: string, eventId: string): Promi
   }
 
   const membership = await getMembership(userId, event.organizationId);
-  if (!membership) {
+  if (!membership || !allowedRoles.includes(membership.role)) {
     throw new Error('Access denied for event');
   }
 

@@ -1,9 +1,10 @@
-import { ConflictError, NotFoundError, ForbiddenError, ValidationError } from '../shared/errors';
+import { ConflictError, NotFoundError, ForbiddenError, ValidationError, ConcurrencyConflictError } from '../shared/errors';
 import { invitationRepository } from './repository';
 import { volunteerRepository } from '../volunteer/repository';
 import { needRepository } from '../needs/repository';
 import { AuditService } from '../audit/AuditService';
 import { InvitationStatus } from '@prisma/client';
+import { prisma } from '../../../prisma';
 
 export class InvitationService {
   async lazyExpire(invitation: any) {
@@ -125,7 +126,17 @@ export class InvitationService {
     }
 
     const respondedAt = new Date();
-    const updated = await invitationRepository.updateStatus(id, status as InvitationStatus, respondedAt);
+    
+    const updateResult = await prisma.volunteerInvitation.updateMany({
+      where: { id, status: 'PENDING' },
+      data: { status: status as InvitationStatus, respondedAt }
+    });
+
+    if (updateResult.count === 0) {
+      throw new ConcurrencyConflictError('Invitation is no longer pending or was concurrently modified');
+    }
+
+    const updated = await invitationRepository.findById(id);
 
     await AuditService.log({
       action: status === 'ACCEPTED' ? 'INVITATION_ACCEPTED' : 'INVITATION_DECLINED',

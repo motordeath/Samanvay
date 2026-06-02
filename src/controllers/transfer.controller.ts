@@ -1,112 +1,54 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { getTransfers, getTransferById, updateTransferStatus } from '../services/transfer.service';
 import { createSuccessResponse } from '../utils/response';
-import { safeAudit } from '../utils/safe-audit';
-import { createAuditLog } from '../services/audit.service';
-import { AuthRequest } from '../middleware/auth.middleware';
+import { asyncHandler } from '../middleware/asyncHandler';
+import { NotFoundError } from '../utils/errors';
 
-export async function getTransfersController(req: Request, res: Response, next: NextFunction) {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const skip = (page - 1) * limit;
-    
-    const filters: any = {};
-    if (req.query.status) filters.status = req.query.status;
-    if (req.query.organizationId) {
-      // Transfer has fromOrganizationId and toOrganizationId.
-      // Usually we want transfers where the organization is either side.
-      filters.OR = [
-        { fromOrganizationId: req.query.organizationId },
-        { toOrganizationId: req.query.organizationId }
-      ];
-    }
-
-    const transfers = await getTransfers(filters, skip, limit);
-    res.status(200).json(createSuccessResponse(transfers));
-  } catch (error) {
-    next(error);
+export const getTransfersController = asyncHandler(async (req: Request, res: Response) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const skip = (page - 1) * limit;
+  
+  const filters: any = {};
+  if (req.query.status) filters.status = req.query.status;
+  if (req.query.organizationId) {
+    filters.OR = [
+      { fromOrganizationId: req.query.organizationId },
+      { toOrganizationId: req.query.organizationId }
+    ];
   }
-}
 
-export async function getTransferController(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { id } = req.params;
-    const transfer = await getTransferById(id);
-    if (!transfer) {
-      return res.status(404).json({ success: false, error: { message: 'Transfer not found' } });
-    }
-    res.status(200).json(createSuccessResponse(transfer));
-  } catch (error) {
-    next(error);
+  const transfers = await getTransfers(filters, skip, limit);
+  res.status(200).json(createSuccessResponse(transfers));
+});
+
+export const getTransferController = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const transfer = await getTransferById(id);
+  if (!transfer) {
+    throw new NotFoundError('Transfer not found');
   }
-}
+  res.status(200).json(createSuccessResponse(transfer));
+});
 
-export async function completeTransferController(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const { id } = req.params;
-    const result = await updateTransferStatus(id, 'COMPLETED');
-    const transfer = result.transfer;
+/**
+ * Note: organizationId and userId (if needed) are temporary placeholders until authentication 
+ * and authorization middleware are implemented. Future phases will derive actor 
+ * context from authenticated request state rather than request payloads.
+ */
+export const completeTransferController = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const transfer = await updateTransferStatus(id, 'COMPLETED');
+  res.status(200).json(createSuccessResponse(transfer));
+});
 
-    await safeAudit(() =>
-      createAuditLog({
-        action: 'TRANSFER_COMPLETED',
-        entityType: 'TRANSFER',
-        entityId: transfer.id,
-        userId: req.user?.id,
-        organizationId: transfer.toOrganizationId,
-        metadata: {
-          previousStatus: result.previousStatus,
-          newStatus: result.newStatus
-        }
-      })
-    );
-
-    res.status(200).json(createSuccessResponse(transfer));
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function cancelTransferController(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const { id } = req.params;
-    const result = await updateTransferStatus(id, 'CANCELLED');
-    const transfer = result.transfer;
-
-    await safeAudit(() =>
-      createAuditLog({
-        action: 'TRANSFER_CANCELLED',
-        entityType: 'TRANSFER',
-        entityId: transfer.id,
-        userId: req.user?.id,
-        organizationId: transfer.toOrganizationId,
-        metadata: {
-          previousStatus: result.previousStatus,
-          newStatus: result.newStatus
-        }
-      })
-    );
-
-    res.status(200).json(createSuccessResponse(transfer));
-  } catch (error) {
-    next(error);
-  }
-}
-
-export const startTransfer = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const result = await updateTransferStatus(
-      req.params.id,
-      'IN_TRANSIT'
-    );
-    const transfer = result.transfer;
-
-    return res.json({
-      success: true,
-      data: transfer,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+/**
+ * Note: organizationId and userId (if needed) are temporary placeholders until authentication 
+ * and authorization middleware are implemented. Future phases will derive actor 
+ * context from authenticated request state rather than request payloads.
+ */
+export const cancelTransferController = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const transfer = await updateTransferStatus(id, 'CANCELLED');
+  res.status(200).json(createSuccessResponse(transfer));
+});

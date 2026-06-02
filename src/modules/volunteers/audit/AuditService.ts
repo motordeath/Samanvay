@@ -7,8 +7,10 @@ export class AuditService {
     entityType: string;
     entityId: string;
     metadata?: any;
+    tx?: any;
   }) {
-    return await prisma.volunteerAudit.create({
+    const client = params.tx || prisma;
+    return await client.volunteerAudit.create({
       data: {
         action: params.action,
         volunteerId: params.volunteerId || null,

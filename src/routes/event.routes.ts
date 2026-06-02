@@ -8,6 +8,7 @@ const router = Router();
 // Public reads
 router.get('/', eventController.getAll);
 router.get('/:id', eventController.getById);
+router.get('/:id/coordination-status', eventController.getCoordinationStatus);
 
 // Protected writes
 // organizationId flows through req.body (it's a required field in createEventSchema)

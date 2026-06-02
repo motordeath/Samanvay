@@ -38,3 +38,9 @@ export class ForbiddenError extends BaseAppError {
     super(message, 403);
   }
 }
+
+export class ConcurrencyConflictError extends BaseAppError {
+  constructor(message: string) {
+    super(message, 409);
+  }
+}

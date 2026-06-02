@@ -1,4 +1,4 @@
-import { ConflictError, NotFoundError, StateTransitionError, ValidationError } from '../shared/errors';
+import { ConflictError, NotFoundError, StateTransitionError, ValidationError, ConcurrencyConflictError } from '../shared/errors';
 import { assignmentRepository } from './repository';
 import { invitationRepository } from '../invitations/repository';
 import { invitationService } from '../invitations/service';
@@ -10,7 +10,6 @@ import { prisma } from '../../../prisma';
 
 export class AssignmentService {
   async createAssignment(data: { volunteerId: string; needId: string }, userId: string) {
-    // 1. Fetch Need and count active assignments
     const need = await needRepository.findById(data.needId);
     if (!need) {
       throw new NotFoundError('Volunteer Need not found');
@@ -25,13 +24,11 @@ export class AssignmentService {
       throw new ConflictError('Need capacity has been reached');
     }
 
-    // 2. Validate Duplication
     const existingAssignment = await assignmentRepository.findByVolunteerAndNeed(data.volunteerId, data.needId);
     if (existingAssignment) {
       throw new ConflictError('Volunteer is already assigned to this need');
     }
 
-    // 3. Validate Invitation exists and is ACCEPTED (lazily expiring first)
     const invitation = await invitationRepository.findByVolunteerAndNeed(data.volunteerId, data.needId);
     if (!invitation) {
       throw new ConflictError('No invitation found for this volunteer and need');
@@ -42,33 +39,48 @@ export class AssignmentService {
       throw new ConflictError(`Invitation is currently ${evaluatedInvitation.status}, not ACCEPTED`);
     }
 
-    // 4. Create the Assignment
-    const assignment = await assignmentRepository.create({
-      ...data,
-      createdBy: userId,
-    });
-
-    // 5. Status Auto-Sync (need -> FILLED if capacity reached)
-    const newCount = currentCount + 1;
-    if (newCount === need.requiredCount) {
-      await needRepository.update(data.needId, { status: 'FILLED' });
-      await AuditService.log({
-        action: 'NEED_CLOSED', // It's closed to new assignments
-        entityType: 'VOLUNTEER_NEED',
-        entityId: data.needId,
-        metadata: { status: 'FILLED' },
+    return await prisma.$transaction(async (tx) => {
+      const assignment = await tx.volunteerAssignment.create({
+        data: {
+          volunteerId: data.volunteerId,
+          needId: data.needId,
+          status: 'ASSIGNED',
+          createdBy: userId,
+        },
+        include: { volunteer: true, need: true }
       });
-    }
 
-    await AuditService.log({
-      action: 'ASSIGNMENT_CREATED',
-      volunteerId: data.volunteerId,
-      entityType: 'VOLUNTEER_ASSIGNMENT',
-      entityId: assignment.id,
-      metadata: { needId: data.needId, createdBy: userId },
+      const newCount = currentCount + 1;
+      if (newCount === need.requiredCount) {
+        const updateResult = await tx.volunteerNeed.updateMany({
+          where: { id: data.needId, status: 'OPEN' },
+          data: { status: 'FILLED' }
+        });
+        
+        if (updateResult.count === 0) {
+          throw new ConcurrencyConflictError('Need capacity has been reached or need is no longer open');
+        }
+
+        await AuditService.log({
+          action: 'NEED_CLOSED',
+          entityType: 'VOLUNTEER_NEED',
+          entityId: data.needId,
+          metadata: { status: 'FILLED' },
+          tx
+        });
+      }
+
+      await AuditService.log({
+        action: 'ASSIGNMENT_CREATED',
+        volunteerId: data.volunteerId,
+        entityType: 'VOLUNTEER_ASSIGNMENT',
+        entityId: assignment.id,
+        metadata: { needId: data.needId, createdBy: userId },
+        tx
+      });
+
+      return assignment;
     });
-
-    return assignment;
   }
 
   async getAssignmentById(id: string) {
@@ -87,7 +99,6 @@ export class AssignmentService {
     const assignment = await this.getAssignmentById(id);
     const currentStatus = assignment.status;
 
-    // State Machine Guards
     if (currentStatus === nextStatus) {
       return assignment;
     }
@@ -99,51 +110,71 @@ export class AssignmentService {
       isValid = true;
     } else if (currentStatus === 'CHECKED_OUT' && nextStatus === 'COMPLETED') {
       isValid = true;
+    } else if (currentStatus === 'ASSIGNED' && nextStatus === 'CANCELLED') {
+      isValid = true;
     }
 
     if (!isValid) {
       throw new StateTransitionError(`Invalid assignment status transition: ${currentStatus} -> ${nextStatus}`);
     }
 
-    const completedAt = nextStatus === 'COMPLETED' ? new Date() : null;
-    const updated = await assignmentRepository.updateStatus(id, nextStatus, completedAt);
+    return await prisma.$transaction(async (tx) => {
+      const completedAt = nextStatus === 'COMPLETED' ? new Date() : null;
+      const updated = await tx.volunteerAssignment.update({
+        where: { id },
+        data: {
+          status: nextStatus,
+          ...(completedAt !== null && { completedAt }),
+        },
+        include: { volunteer: true, need: true }
+      });
 
-    await AuditService.log({
-      action: nextStatus === 'COMPLETED' ? 'COMPLETED' : 'ASSIGNMENT_STATUS_CHANGED',
-      volunteerId: assignment.volunteerId,
-      entityType: 'VOLUNTEER_ASSIGNMENT',
-      entityId: id,
-      metadata: { from: currentStatus, to: nextStatus },
+      let actionName = 'ASSIGNMENT_STATUS_CHANGED';
+      if (nextStatus === 'COMPLETED') {
+        actionName = 'COMPLETED';
+      } else if (nextStatus === 'CANCELLED') {
+        actionName = 'ASSIGNMENT_CANCELLED';
+      }
+
+      await AuditService.log({
+        action: actionName,
+        volunteerId: assignment.volunteerId,
+        entityType: 'VOLUNTEER_ASSIGNMENT',
+        entityId: id,
+        metadata: { from: currentStatus, to: nextStatus },
+        tx
+      });
+
+      return updated;
     });
-
-    return updated;
   }
 
   async removeAssignment(id: string) {
     const assignment = await this.getAssignmentById(id);
     
-    // Physical delete (onDelete: Restrict ensures DB safeguards are respected)
-    await prisma.volunteerAssignment.delete({
-      where: { id },
-    });
+    return await prisma.$transaction(async (tx) => {
+      await tx.volunteerAssignment.delete({
+        where: { id },
+      });
 
-    // Sync Need status back to OPEN if count falls below requiredCount
-    const need = await needRepository.findById(assignment.needId);
-    if (need && need.status === 'FILLED') {
-      const activeCount = await assignmentRepository.countByNeed(assignment.needId);
-      if (activeCount < need.requiredCount) {
-        await needRepository.update(assignment.needId, { status: 'OPEN' });
-        await AuditService.log({
-          action: 'ASSIGNMENT_STATUS_CHANGED',
-          volunteerId: assignment.volunteerId,
-          entityType: 'VOLUNTEER_NEED',
-          entityId: assignment.needId,
-          metadata: { message: 'Need reverted to OPEN due to assignment removal' },
-        });
+      const need = await tx.volunteerNeed.findUnique({ where: { id: assignment.needId } });
+      if (need && need.status === 'FILLED') {
+        const activeCount = await tx.volunteerAssignment.count({ where: { needId: assignment.needId } });
+        if (activeCount < need.requiredCount) {
+          await tx.volunteerNeed.update({ where: { id: assignment.needId }, data: { status: 'OPEN' } });
+          await AuditService.log({
+            action: 'ASSIGNMENT_STATUS_CHANGED',
+            volunteerId: assignment.volunteerId,
+            entityType: 'VOLUNTEER_NEED',
+            entityId: assignment.needId,
+            metadata: { message: 'Need reverted to OPEN due to assignment removal' },
+            tx
+          });
+        }
       }
-    }
 
-    return assignment;
+      return assignment;
+    });
   }
 }
 export const assignmentService = new AssignmentService();

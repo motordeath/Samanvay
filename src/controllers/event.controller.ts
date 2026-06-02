@@ -72,3 +72,16 @@ export async function update(req: AuthRequest, res: Response, next: NextFunction
     next(error);
   }
 }
+
+export async function getCoordinationStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = String(req.params.id);
+    // Ideally we would import PlanningService directly
+    // const { PlanningService } = require('../services/planning.service');
+    const { PlanningService } = await import('../services/planning.service');
+    const status = await PlanningService.getEventCoordinationStatus(id);
+    res.json(createSuccessResponse(status));
+  } catch (error) {
+    next(error);
+  }
+}

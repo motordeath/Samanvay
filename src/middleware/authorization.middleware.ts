@@ -43,7 +43,7 @@ export function requireOrganizationRole(allowedRoles: string[]) {
   };
 }
 
-export function requireTransferOwnership() {
+export function requireTransferOwnership(allowedRoles: string[] = ['OWNER', 'ADMIN']) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const user = req.user;
@@ -62,7 +62,7 @@ export function requireTransferOwnership() {
         });
       }
 
-      await requireTransferAccess(user.id, transferId);
+      await requireTransferAccess(user.id, transferId, allowedRoles);
       next();
     } catch (error: any) {
       if (error.message === 'Access denied for transfer') {
@@ -82,7 +82,7 @@ export function requireTransferOwnership() {
   };
 }
 
-export function requirePartnershipOwnership() {
+export function requirePartnershipOwnership(allowedRoles: string[] = ['OWNER', 'ADMIN']) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const user = req.user;
@@ -102,7 +102,7 @@ export function requirePartnershipOwnership() {
       }
 
       const authService = await import('../services/authorization.service');
-      await authService.requirePartnershipAccess(user.id, partnershipId);
+      await authService.requirePartnershipAccess(user.id, partnershipId, allowedRoles);
       next();
     } catch (error: any) {
       if (error.message === 'Access denied for partnership') {
@@ -122,7 +122,7 @@ export function requirePartnershipOwnership() {
   };
 }
 
-export function requireOrganizationAccess() {
+export function requireOrganizationAccess(allowedRoles: string[] = ['OWNER', 'ADMIN', 'COORDINATOR', 'VOLUNTEER']) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const user = req.user;
@@ -142,7 +142,7 @@ export function requireOrganizationAccess() {
       }
 
       const authService = await import('../services/authorization.service');
-      await authService.requireOrganizationAccess(user.id, organizationId);
+      await authService.requireOrganizationAccess(user.id, organizationId, allowedRoles);
       next();
     } catch (error: any) {
       if (error.message === 'Access denied for organization') {
@@ -162,7 +162,7 @@ export function requireOrganizationAccess() {
   };
 }
 
-export function requireEventAccess() {
+export function requireEventAccess(allowedRoles: string[] = ['OWNER', 'ADMIN', 'COORDINATOR']) {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const user = req.user;
@@ -182,7 +182,7 @@ export function requireEventAccess() {
       }
 
       const authService = await import('../services/authorization.service');
-      await authService.requireEventAccess(user.id, eventId);
+      await authService.requireEventAccess(user.id, eventId, allowedRoles);
       next();
     } catch (error: any) {
       if (error.message === 'Access denied for event') {
