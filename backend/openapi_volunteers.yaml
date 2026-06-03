@@ -1,0 +1,434 @@
+openapi: 3.0.3
+info:
+  title: Samanvay Volunteer Coordination Engine API
+  description: Decoupled, consent-based, and traceably audited volunteer coordination API for managing aid crises.
+  version: 1.0.0
+paths:
+  /api/volunteers:
+    post:
+      summary: Create volunteer profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                bio:
+                  type: string
+                location:
+                  type: string
+                experienceYears:
+                  type: integer
+                  minimum: 0
+      responses:
+        '201':
+          description: Created profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+    get:
+      summary: List all active volunteers
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /api/volunteers/{id}:
+    get:
+      summary: Fetch single volunteer profile with full associations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+        '404':
+          description: Profile not found
+    patch:
+      summary: Update volunteer profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bio:
+                  type: string
+                location:
+                  type: string
+                experienceYears:
+                  type: integer
+                isAvailable:
+                  type: boolean
+      responses:
+        '200':
+          description: Updated profile
+    delete:
+      summary: Soft-delete/Deactivate volunteer profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Profile deactivated (isActive set to false)
+
+  /api/skills:
+    post:
+      summary: Create global skill
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Created
+    get:
+      summary: List all skills
+      responses:
+        '200':
+          description: List
+
+  /api/skills/volunteers/{volunteerId}:
+    post:
+      summary: Associate skill to a volunteer profile
+      parameters:
+        - name: volunteerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [skillId, level]
+              properties:
+                skillId:
+                  type: string
+                  format: uuid
+                level:
+                  type: string
+                  enum: [BEGINNER, INTERMEDIATE, ADVANCED, EXPERT]
+      responses:
+        '200':
+          description: Associated
+
+  /api/certifications:
+    post:
+      summary: Create global certification
+    get:
+      summary: List certifications
+
+  /api/certifications/volunteers/{volunteerId}:
+    post:
+      summary: Associate certification to volunteer profile
+
+  /api/availability:
+    post:
+      summary: Create availability slot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [volunteerId, dayOfWeek, startTime, endTime]
+              properties:
+                volunteerId:
+                  type: string
+                  format: uuid
+                dayOfWeek:
+                  type: integer
+                  minimum: 0
+                  maximum: 6
+                startTime:
+                  type: string
+                  pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+                endTime:
+                  type: string
+                  pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+      responses:
+        '201':
+          description: Availability added
+        '400':
+          description: Validation error (e.g. startTime >= endTime)
+
+  /api/availability/{id}:
+    patch:
+      summary: Update availability slot
+    delete:
+      summary: Soft-delete availability slot (isDeleted set to true)
+
+  /api/volunteer-needs:
+    post:
+      summary: Create volunteer need
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: x-organization-ids
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [organizationId, title, requiredCount, startDate, endDate]
+              properties:
+                organizationId:
+                  type: string
+                  format: uuid
+                eventId:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                description:
+                  type: string
+                requiredCount:
+                  type: integer
+                location:
+                  type: string
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                skills:
+                  type: array
+                  items:
+                    type: object
+                    required: [skillId, requiredLevel]
+                    properties:
+                      skillId:
+                        type: string
+                        format: uuid
+                      requiredLevel:
+                        type: string
+                        enum: [BEGINNER, INTERMEDIATE, ADVANCED, EXPERT]
+      responses:
+        '201':
+          description: Need created
+        '403':
+          description: Forbidden (ownership context does not match organizationId)
+
+  /api/matching/volunteer-needs/{needId}:
+    post:
+      summary: Compute on-demand matching scores (non-persistent)
+      parameters:
+        - name: needId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Sorted candidates list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        volunteerId:
+                          type: string
+                          format: uuid
+                        score:
+                          type: integer
+                          example: 95
+
+  /api/invitations:
+    post:
+      summary: Send volunteer invitation
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: x-organization-ids
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [volunteerId, needId]
+              properties:
+                volunteerId:
+                  type: string
+                  format: uuid
+                needId:
+                  type: string
+                  format: uuid
+                expiresAt:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Invitation sent
+
+  /api/invitations/{id}/respond:
+    patch:
+      summary: Respond to invitation
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [ACCEPTED, DECLINED]
+      responses:
+        '200':
+          description: Responded
+
+  /api/assignments:
+    post:
+      summary: Create assignment from accepted invitation
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [volunteerId, needId]
+              properties:
+                volunteerId:
+                  type: string
+                  format: uuid
+                needId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Assignment created
+        '409':
+          description: Conflict (e.g. capacity reached or double-allocation)
+
+  /api/assignments/{id}/status:
+    patch:
+      summary: Update assignment status (guards: ASSIGNED -> CHECKED_IN -> CHECKED_OUT -> COMPLETED)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [ASSIGNED, CHECKED_IN, CHECKED_OUT, COMPLETED]
+      responses:
+        '200':
+          description: Status updated
+        '422':
+          description: StateTransitionError (invalid jump requested)
+
+  /api/attendance/check-in:
+    post:
+      summary: Log check-in attendance record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assignmentId]
+              properties:
+                assignmentId:
+                  type: string
+                  format: uuid
+                verificationMethod:
+                  type: string
+                verifiedBy:
+                  type: string
+      responses:
+        '200':
+          description: Checked in
+
+  /api/attendance/check-out:
+    post:
+      summary: Log check-out attendance record

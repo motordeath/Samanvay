@@ -1,0 +1,249 @@
+{
+  "info": {
+    "_postman_id": "8bbca615-5853-4876-9c48-fb22067710c6",
+    "name": "Samanvay Volunteer Coordination Engine",
+    "description": "Postman Collection for testing Samanvay's decoupled, audited, consent-based volunteer coordination engine.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Volunteer Profile",
+      "item": [
+        {
+          "name": "Create Volunteer Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11\",\n  \"bio\": \"Specialized in flood evacuations and trauma aid.\",\n  \"location\": \"Seattle\",\n  \"experienceYears\": 5\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/volunteers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "volunteers"]
+            }
+          }
+        },
+        {
+          "name": "List Volunteers",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:3000/api/volunteers"
+          }
+        },
+        {
+          "name": "Deactivate Volunteer Profile (Soft Delete)",
+          "request": {
+            "method": "DELETE",
+            "url": "http://localhost:3000/api/volunteers/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Availability",
+      "item": [
+        {
+          "name": "Add Availability Slot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volunteerId\": \"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11\",\n  \"dayOfWeek\": 2,\n  \"startTime\": \"09:00\",\n  \"endTime\": \"17:00\"\n}"
+            },
+            "url": "http://localhost:3000/api/availability"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Volunteer Needs",
+      "item": [
+        {
+          "name": "Create Need",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+              },
+              {
+                "key": "x-organization-ids",
+                "value": "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organizationId\": \"b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22\",\n  \"title\": \"Field Medical Responder\",\n  \"requiredCount\": 2,\n  \"location\": \"Seattle\",\n  \"startDate\": \"2026-06-01T09:00:00Z\",\n  \"endDate\": \"2026-06-05T18:00:00Z\"\n}"
+            },
+            "url": "http://localhost:3000/api/volunteer-needs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Matching Engine",
+      "item": [
+        {
+          "name": "Compute Candidates Match",
+          "request": {
+            "method": "POST",
+            "url": "http://localhost:3000/api/matching/volunteer-needs/need-uuid-here"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invitations",
+      "item": [
+        {
+          "name": "Send Invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "sender-user-id"
+              },
+              {
+                "key": "x-organization-ids",
+                "value": "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volunteerId\": \"volunteer-uuid\",\n  \"needId\": \"need-uuid\",\n  \"expiresAt\": \"2026-06-02T18:00:00Z\"\n}"
+            },
+            "url": "http://localhost:3000/api/invitations"
+          }
+        },
+        {
+          "name": "Accept/Decline Invitation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "volunteer-user-id"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACCEPTED\"\n}"
+            },
+            "url": "http://localhost:3000/api/invitations/invite-uuid/respond"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assignments",
+      "item": [
+        {
+          "name": "Create Assignment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "coordinator-user-id"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volunteerId\": \"volunteer-uuid\",\n  \"needId\": \"need-uuid\"\n}"
+            },
+            "url": "http://localhost:3000/api/assignments"
+          }
+        },
+        {
+          "name": "Transition Assignment Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CHECKED_IN\"\n}"
+            },
+            "url": "http://localhost:3000/api/assignments/assign-uuid/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "Check In",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignmentId\": \"assign-uuid\",\n  \"verificationMethod\": \"QR\",\n  \"verifiedBy\": \"coordinator-user-id\"\n}"
+            },
+            "url": "http://localhost:3000/api/attendance/check-in"
+          }
+        },
+        {
+          "name": "Check Out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignmentId\": \"assign-uuid\",\n  \"verificationMethod\": \"MANUAL\"\n}"
+            },
+            "url": "http://localhost:3000/api/attendance/check-out"
+          }
+        }
+      ]
+    }
+  ]
+}
