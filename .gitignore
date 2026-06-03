@@ -29,3 +29,17 @@ Thumbs.db
 
 # Prisma
 prisma/dev.db
+
+# AI / Assistant Tooling
+.agents/
+.claude/
+.codex/
+graphify-out/
+
+# Generated Docs / Temporary Architecture Artifacts
+GRAPHIFY.md
+BACKEND_READY.md
+FRONTEND_INTEGRATION_GUIDE.md
+
+# OS
+desktop.ini
