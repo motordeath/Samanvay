@@ -1,0 +1,133 @@
+
+<style>
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
+.tag { display:inline-block; font-size:11px; font-weight:500; padding:3px 10px; border-radius:20px; margin-bottom:10px; }
+.tag-core { background:#E1F5EE; color:#085041; }
+.tag-ext  { background:#F1EFE8; color:#444441; }
+.sys-title { font-size:14px; font-weight:500; color:var(--color-text-primary); margin:0 0 10px; }
+.feature-row { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--color-text-secondary); padding:5px 0; border-bottom:0.5px solid var(--color-border-tertiary); }
+.feature-row:last-child { border-bottom:none; }
+.dot-core { width:7px; height:7px; border-radius:50%; background:#1D9E75; flex-shrink:0; }
+.dot-ext  { width:7px; height:7px; border-radius:50%; background:#B4B2A9; flex-shrink:0; }
+.section-label { font-size:11px; font-weight:500; color:var(--color-text-tertiary); letter-spacing:.06em; text-transform:uppercase; margin:20px 0 8px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.boundary { border:1.5px dashed var(--color-border-secondary); border-radius:14px; padding:16px; margin-bottom:20px; }
+.boundary-label { font-size:12px; font-weight:500; color:var(--color-text-secondary); margin:0 0 12px; }
+</style>
+
+<h2 class="sr-only">Samanvay MVP scope — core features vs extensions</h2>
+
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:12px 16px;background:var(--color-background-secondary);border-radius:10px;">
+  <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-text-secondary)"><span class="dot-core"></span>Core — build now</span>
+  <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-text-secondary)"><span class="dot-ext"></span>Extension — later</span>
+</div>
+
+<div class="boundary">
+<div class="boundary-label">Phase 1 · MVP</div>
+<div class="grid2">
+
+  <div class="card">
+    <span class="tag tag-core">Identity</span>
+    <p class="sys-title">Identity &amp; auth</p>
+    <div class="feature-row"><span class="dot-core"></span>Register user / NGO</div>
+    <div class="feature-row"><span class="dot-core"></span>Login &amp; roles</div>
+    <div class="feature-row"><span class="dot-core"></span>Basic org profile</div>
+    <div class="feature-row"><span class="dot-ext"></span>SSO / OAuth</div>
+    <div class="feature-row"><span class="dot-ext"></span>Multi-org membership</div>
+  </div>
+
+  <div class="card">
+    <span class="tag tag-core">NGO Network</span>
+    <p class="sys-title">NGO network</p>
+    <div class="feature-row"><span class="dot-core"></span>Org profile page</div>
+    <div class="feature-row"><span class="dot-core"></span>Send / accept partnership</div>
+    <div class="feature-row"><span class="dot-core"></span>View partner list</div>
+    <div class="feature-row"><span class="dot-ext"></span>Trust score algorithm</div>
+    <div class="feature-row"><span class="dot-ext"></span>Activity history feed</div>
+  </div>
+
+  <div class="card">
+    <span class="tag tag-core">Resources</span>
+    <p class="sys-title">Resource management</p>
+    <div class="feature-row"><span class="dot-core"></span>Add / edit resource</div>
+    <div class="feature-row"><span class="dot-core"></span>Current stock view</div>
+    <div class="feature-row"><span class="dot-core"></span>Request resource</div>
+    <div class="feature-row"><span class="dot-ext"></span>Lot tracking</div>
+    <div class="feature-row"><span class="dot-ext"></span>Expiry &amp; alerts</div>
+    <div class="feature-row"><span class="dot-ext"></span>Reservation engine</div>
+  </div>
+
+  <div class="card">
+    <span class="tag tag-core">Funds</span>
+    <p class="sys-title">Fund management</p>
+    <div class="feature-row"><span class="dot-core"></span>Org fund balance</div>
+    <div class="feature-row"><span class="dot-core"></span>Log contribution</div>
+    <div class="feature-row"><span class="dot-core"></span>Log expenditure</div>
+    <div class="feature-row"><span class="dot-ext"></span>Campaign fund</div>
+    <div class="feature-row"><span class="dot-ext"></span>Community fund</div>
+    <div class="feature-row"><span class="dot-ext"></span>Donor dashboard</div>
+  </div>
+
+  <div class="card">
+    <span class="tag tag-core">Volunteers</span>
+    <p class="sys-title">Volunteer network</p>
+    <div class="feature-row"><span class="dot-core"></span>Volunteer profile</div>
+    <div class="feature-row"><span class="dot-core"></span>Assign to event</div>
+    <div class="feature-row"><span class="dot-core"></span>Mark attendance</div>
+    <div class="feature-row"><span class="dot-ext"></span>Matching engine</div>
+    <div class="feature-row"><span class="dot-ext"></span>Global volunteer pool</div>
+    <div class="feature-row"><span class="dot-ext"></span>Certificates</div>
+  </div>
+
+  <div class="card">
+    <span class="tag tag-core">Events</span>
+    <p class="sys-title">Event system</p>
+    <div class="feature-row"><span class="dot-core"></span>Create event</div>
+    <div class="feature-row"><span class="dot-core"></span>Attach volunteers</div>
+    <div class="feature-row"><span class="dot-core"></span>Attach resources</div>
+    <div class="feature-row"><span class="dot-core"></span>Mark complete</div>
+    <div class="feature-row"><span class="dot-ext"></span>Multi-NGO campaigns</div>
+    <div class="feature-row"><span class="dot-ext"></span>Public event page</div>
+  </div>
+
+</div>
+</div>
+
+<div class="boundary" style="border-color:var(--color-border-tertiary);opacity:.75;">
+<div class="boundary-label">Phase 2+ · Extensions</div>
+<div class="grid2">
+
+  <div class="card">
+    <span class="tag tag-ext">Coordination</span>
+    <p class="sys-title">Coordination engine</p>
+    <div class="feature-row"><span class="dot-ext"></span>Need posting</div>
+    <div class="feature-row"><span class="dot-ext"></span>Candidate matching</div>
+    <div class="feature-row"><span class="dot-ext"></span>Offer &amp; approval flow</div>
+  </div>
+
+  <div class="card">
+    <span class="tag tag-ext">Trust</span>
+    <p class="sys-title">Verification &amp; trust</p>
+    <div class="feature-row"><span class="dot-ext"></span>Document verification</div>
+    <div class="feature-row"><span class="dot-ext"></span>Trust score engine</div>
+    <div class="feature-row"><span class="dot-ext"></span>Dispute resolution</div>
+  </div>
+
+  <div class="card">
+    <span class="tag tag-ext">Impact</span>
+    <p class="sys-title">Impact ledger</p>
+    <div class="feature-row"><span class="dot-ext"></span>Immutable records</div>
+    <div class="feature-row"><span class="dot-ext"></span>Beneficiary count</div>
+    <div class="feature-row"><span class="dot-ext"></span>Verified reports</div>
+  </div>
+
+  <div class="card">
+    <span class="tag tag-ext">Analytics</span>
+    <p class="sys-title">Analytics &amp; admin</p>
+    <div class="feature-row"><span class="dot-ext"></span>Platform dashboard</div>
+    <div class="feature-row"><span class="dot-ext"></span>NGO analytics</div>
+    <div class="feature-row"><span class="dot-ext"></span>Fraud detection</div>
+  </div>
+
+</div>
+</div>

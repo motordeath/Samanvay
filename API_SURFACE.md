@@ -1,57 +1,66 @@
-# Samanvay Backend API Surface
+# API Surface
 
-This document highlights the stabilized core API surface intended for frontend consumption. It focuses on the heavily orchestrated flows ensuring the frontend respects the transactional nature of the backend.
+This document outlines the externally consumable REST endpoints and coordination interfaces.
 
-## Coordination & Projections
-The primary operational state tree for any event.
+## Important Route Consistency Rule
 
-### `GET /events/:id/coordination-status`
-* **Response Shape:**
-  ```json
-  {
-    "staffing": { "required": 10, "assigned": 5, "status": "AT_RISK" },
-    "resources": { "required": 100, "reserved": 100, "status": "READY" },
-    "transfers": { "pending": 2 },
-    "overallStatus": "AT_RISK"
-  }
-  ```
-* **Purpose:** Acts as the frontend orchestration root state. Derived and computed dynamically.
+ALL externally consumable REST endpoints must follow:
+```text
+/api/*
+```
 
-## Resource Engine
-Authoritative API for cross-organization resource flows.
+Examples:
+```text
+/api/events
+/api/resources
+/api/users
+/api/organizations
+```
 
-### `POST /resources/transfers`
-* **Purpose:** Creates a resource transfer request between organizations to fulfill an event's resource need.
-* **Flow Context:** Will create deterministic transfer states and eventually update reservation allocations upon dispatch.
+Avoid:
+* mixed prefixes,
+* nested inconsistent namespaces,
+* route duplication.
 
-### `POST /resources/reservations`
-* **Purpose:** Locks physical inventory (Pessimistic allocation).
-* **Flow Context:** Generates deterministic `InventoryLedgerEntry` logs to ensure no resources are double-booked.
+This prevents frontend API fragmentation later.
 
-### `GET /resources/inventory`
-* **Purpose:** Retrieves the current computed stock projection of resources.
-* **Flow Context:** Exclusively read-optimized. To change inventory, operations must issue stock adjustments resulting in ledger entries.
+---
 
-## Volunteer Engine
-Authoritative API for human capital.
+## Backend Endpoints (Express)
 
-### `POST /volunteers/assignments`
-* **Purpose:** Finalizes an assignment of a global volunteer to a specific event need.
-* **Constraint:** Validated against volunteer availability, active membership standing, and current assignment conflicts.
+Base URL: `http://localhost:3000/api`
 
-### `PATCH /volunteers/assignments/:id/status`
-* **Purpose:** Transitions the volunteer lifecycle (e.g., ASSIGNED -> CHECKED_IN).
-* **Constraint:** Strictly enforced via `AssignmentStatus` enum. Invalid transitions are rejected natively.
+### Auth & Users
+* `POST /auth/login` - Authenticate and receive JWT
+* `GET /users/:id` - Fetch user details
+* `GET /organizations` - List organizations
 
-## Event Management
-### `PATCH /events/:id`
-* **Purpose:** Modifies event details including `status`.
-* **Constraint:** Updating an event to `CANCELLED` will synchronously invalidate and propagate cancellations down to all associated Volunteer Needs and Assignments.
+### Events
+* `GET /events` - List events
+* `GET /events/:id` - Get event details
+* `GET /events/:id/coordination-status` - Get event coordination status
+* `GET /events/:id/readiness` - Get event readiness metrics
 
-## Error Handling
-All API responses map to standardized error types:
-* `400 ValidationError`: Bad input data.
-* `403 ForbiddenError`: Missing organizational or access role.
-* `404 NotFoundError`: Resource unavailable.
-* `409 ConcurrencyConflictError`: Optimistic locking failure (e.g., another user updated the entity exactly at the same time).
-* `422 StateTransitionError`: Invalid workflow transition (e.g., CANCELLED -> PUBLISHED).
+### Resources & Volunteers
+* `GET /resources` - List resources
+* `GET /volunteers` - List volunteers
+
+*All backend endpoints require a valid JWT token in the `Authorization` header for protected routes.*
+
+---
+
+## Coordination Layer Endpoints (FastAPI)
+
+Base URL: `http://localhost:8000`
+
+### General
+* `GET /health` - Service health check
+
+### Dashboard Aggregation
+* `GET /api/dashboard/event/:id` - Fetch aggregated event dashboard projection.
+  * **Headers:** 
+    * `Authorization`: Bearer `<token>`
+    * `x-org-id`: `<organization_id>`
+  * **Behavior:** Checks Redis cache. On miss, aggregates data from `/api/events/:id` and `/api/events/:id/readiness`.
+
+*Note: Coordination layer endpoints act as an aggregation gateway and rely on the Backend for transactional integrity.*

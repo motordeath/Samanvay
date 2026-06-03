@@ -1,0 +1,138 @@
+
+<style>
+.tag { display:inline-block; font-size:11px; font-weight:500; padding:3px 10px; border-radius:20px; margin-bottom:10px; }
+.tag-core   { background:#E1F5EE; color:#085041; }
+.tag-engine { background:#EEEDFE; color:#3C3489; }
+.tag-ext    { background:#F1EFE8; color:#444441; }
+.card { background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:12px; padding:16px 20px; }
+.engine-card { background:var(--color-background-primary); border:1.5px solid #7F77DD; border-radius:12px; padding:16px 20px; }
+.sys-title { font-size:14px; font-weight:500; color:var(--color-text-primary); margin:0 0 10px; }
+.fr { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--color-text-secondary); padding:5px 0; border-bottom:0.5px solid var(--color-border-tertiary); }
+.fr:last-child { border-bottom:none; }
+.d-core   { width:7px;height:7px;border-radius:50%;background:#1D9E75;flex-shrink:0; }
+.d-engine { width:7px;height:7px;border-radius:50%;background:#7F77DD;flex-shrink:0; }
+.d-ext    { width:7px;height:7px;border-radius:50%;background:#B4B2A9;flex-shrink:0; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.zone { border-radius:14px; padding:16px; margin-bottom:16px; }
+.zone-label { font-size:11px; font-weight:500; letter-spacing:.05em; text-transform:uppercase; color:var(--color-text-tertiary); margin:0 0 12px; }
+</style>
+
+<h2 class="sr-only">Samanvay final MVP — foundation + three engines + deferred</h2>
+
+<div style="display:flex;gap:20px;margin-bottom:20px;padding:12px 16px;background:var(--color-background-secondary);border-radius:10px;">
+  <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-text-secondary)"><span class="d-core"></span>Day 1 — foundation</span>
+  <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-text-secondary)"><span class="d-engine"></span>Day 1 — engines (USP)</span>
+  <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-text-secondary)"><span class="d-ext"></span>Later</span>
+</div>
+
+<!-- ZONE 1: FOUNDATION -->
+<div class="zone" style="border:0.5px solid var(--color-border-secondary);">
+  <div class="zone-label">Foundation — just enough for engines to run on</div>
+  <div class="grid3">
+
+    <div class="card">
+      <span class="tag tag-core">Identity</span>
+      <p class="sys-title">Auth &amp; profiles</p>
+      <div class="fr"><span class="d-core"></span>Register NGO + users</div>
+      <div class="fr"><span class="d-core"></span>Roles (admin, coordinator)</div>
+      <div class="fr"><span class="d-core"></span>Basic org profile</div>
+      <div class="fr"><span class="d-core"></span>Partnership links</div>
+      <div class="fr"><span class="d-ext"></span>SSO / OAuth</div>
+      <div class="fr"><span class="d-ext"></span>Multi-org membership</div>
+    </div>
+
+    <div class="card">
+      <span class="tag tag-core">NGO network</span>
+      <p class="sys-title">Social graph</p>
+      <div class="fr"><span class="d-core"></span>Org profile page</div>
+      <div class="fr"><span class="d-core"></span>Send / accept partnership</div>
+      <div class="fr"><span class="d-core"></span>View partner list</div>
+      <div class="fr"><span class="d-ext"></span>Trust score algorithm</div>
+      <div class="fr"><span class="d-ext"></span>Activity history feed</div>
+    </div>
+
+    <div class="card">
+      <span class="tag tag-core">Events</span>
+      <p class="sys-title">Event system</p>
+      <div class="fr"><span class="d-core"></span>Create event</div>
+      <div class="fr"><span class="d-core"></span>Attach volunteers</div>
+      <div class="fr"><span class="d-core"></span>Attach resources</div>
+      <div class="fr"><span class="d-core"></span>Mark complete</div>
+      <div class="fr"><span class="d-ext"></span>Multi-NGO campaigns</div>
+      <div class="fr"><span class="d-ext"></span>Public event page</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ZONE 2: THREE ENGINES -->
+<div class="zone" style="border:1.5px dashed #7F77DD;">
+  <div class="zone-label" style="color:#534AB7;">Three engines — this is what makes Samanvay different</div>
+  <div class="grid3">
+
+    <div class="engine-card">
+      <span class="tag tag-engine">Engine 1</span>
+      <p class="sys-title">Resource coordination</p>
+      <div class="fr"><span class="d-core"></span>Resource catalog per NGO</div>
+      <div class="fr"><span class="d-core"></span>Stock quantities</div>
+      <div class="fr"><span class="d-engine"></span>Post a need</div>
+      <div class="fr"><span class="d-engine"></span>Discover candidates</div>
+      <div class="fr"><span class="d-engine"></span>Offer → approve → transfer</div>
+      <div class="fr"><span class="d-ext"></span>Reservation locks</div>
+      <div class="fr"><span class="d-ext"></span>Community pool</div>
+      <div class="fr"><span class="d-ext"></span>Expiry &amp; alerts</div>
+    </div>
+
+    <div class="engine-card">
+      <span class="tag tag-engine">Engine 2</span>
+      <p class="sys-title">Volunteer matching</p>
+      <div class="fr"><span class="d-core"></span>Volunteer profiles</div>
+      <div class="fr"><span class="d-core"></span>Skills &amp; availability</div>
+      <div class="fr"><span class="d-engine"></span>Post volunteer need</div>
+      <div class="fr"><span class="d-engine"></span>Match by skill + location</div>
+      <div class="fr"><span class="d-engine"></span>Assign → accept → attend</div>
+      <div class="fr"><span class="d-ext"></span>Trust-weighted ranking</div>
+      <div class="fr"><span class="d-ext"></span>Global volunteer pool</div>
+      <div class="fr"><span class="d-ext"></span>Certificates</div>
+    </div>
+
+    <div class="engine-card">
+      <span class="tag tag-engine">Engine 3</span>
+      <p class="sys-title">Fund allocation</p>
+      <div class="fr"><span class="d-core"></span>Fund balance per NGO</div>
+      <div class="fr"><span class="d-core"></span>Log contribution</div>
+      <div class="fr"><span class="d-engine"></span>Create event budget</div>
+      <div class="fr"><span class="d-engine"></span>Allocate from org fund</div>
+      <div class="fr"><span class="d-engine"></span>Log expenditure</div>
+      <div class="fr"><span class="d-engine"></span>Remaining balance view</div>
+      <div class="fr"><span class="d-ext"></span>Campaign fund</div>
+      <div class="fr"><span class="d-ext"></span>Donor transparency</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ZONE 3: DEFERRED -->
+<div class="zone" style="border:0.5px dashed var(--color-border-tertiary);opacity:.7;">
+  <div class="zone-label">Deferred — after engines are stable</div>
+  <div class="grid2">
+
+    <div class="card">
+      <span class="tag tag-ext">Trust</span>
+      <p class="sys-title">Verification &amp; trust scores</p>
+      <div class="fr"><span class="d-ext"></span>Trust score computation</div>
+      <div class="fr"><span class="d-ext"></span>Document verification</div>
+      <div class="fr"><span class="d-ext"></span>Dispute resolution</div>
+    </div>
+
+    <div class="card">
+      <span class="tag tag-ext">Intelligence</span>
+      <p class="sys-title">Impact + analytics</p>
+      <div class="fr"><span class="d-ext"></span>Immutable impact ledger</div>
+      <div class="fr"><span class="d-ext"></span>Platform analytics</div>
+      <div class="fr"><span class="d-ext"></span>Fraud detection</div>
+    </div>
+
+  </div>
+</div>
