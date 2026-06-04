@@ -1,10 +1,12 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    backend_api_url: str = "http://localhost:3000"
-    redis_url: str = "redis://localhost:6379"
+    backend_api_url: str
+    redis_url: str
     websocket_port: int = 8001
     api_port: int = 8000
+    frontend_url: str
+    node_env: str = "development"
     
     # Times in seconds for backend client
     backend_connect_timeout: float = 5.0

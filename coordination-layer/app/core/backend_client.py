@@ -9,14 +9,15 @@ logger = logging.getLogger(__name__)
 class BackendClient:
     def __init__(self):
         self.timeout = Timeout(
-            connect=settings.backend_connect_timeout,
-            read=settings.backend_read_timeout,
-            write=5.0,
+            connect=5.0,
+            read=15.0,
+            write=10.0,
             pool=5.0
         )
         self.client = AsyncClient(
             base_url=settings.backend_api_url,
-            timeout=self.timeout
+            timeout=self.timeout,
+            follow_redirects=True
         )
 
     async def _request(self, method: str, url: str, retries: int = settings.backend_retry_count, **kwargs):

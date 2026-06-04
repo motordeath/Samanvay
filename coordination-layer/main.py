@@ -1,4 +1,7 @@
+import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from app.core.backend_client import backend_client
 from app.cache.redis_client import redis_client
@@ -8,6 +11,7 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.api import health, dashboard
 from app.websocket.manager import ws_manager
 from app.core.errors import backend_exception_handler
+from app.config.settings import settings
 import httpx
 
 @asynccontextmanager
@@ -21,19 +25,40 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, title="Samanvay Coordination Layer")
 
-# Exception Handlers
-app.add_exception_handler(httpx.HTTPStatusError, backend_exception_handler)
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        settings.frontend_url,
+        "http://localhost:3001"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Middleware (Order matters: outermost first)
+# Other Middleware (Order matters: outermost first)
 app.add_middleware(StructuredLoggingMiddleware)
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
-# Routers
+# Health routes
 app.include_router(health.router)
+
+# Exception handlers
+app.add_exception_handler(httpx.HTTPStatusError, backend_exception_handler)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={"success": False, "error": "Internal server error"}
+    )
+
+# API routers
 app.include_router(dashboard.router, prefix="/api")
 
-# Websocket endpoint
+# Websocket setup
 @app.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket, 
@@ -46,12 +71,16 @@ async def websocket_endpoint(
         
     try:
         while True:
-            # Coordination layer mainly pushes updates, but can acknowledge pings
             data = await websocket.receive_text()
-            # We don't process mutations here, just infrastructure signals
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket, org_id)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    PORT = int(os.getenv("PORT", 8000))
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=PORT,
+        reload=False
+    )
