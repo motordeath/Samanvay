@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "start": "ts-node-dev --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "postinstall": "prisma generate",
     "test": "jest --runInBand"
   },
   "keywords": [],
@@ -15,6 +17,7 @@
   "dependencies": {
     "@prisma/client": "^5.10.0",
     "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
     "express": "^4.18.2",
     "express-rate-limit": "^8.5.2",
     "jsonwebtoken": "^9.0.3",
@@ -22,6 +25,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",

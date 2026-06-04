@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as eventService from '../services/event.service';
 import { createEventSchema, updateEventSchema } from '../schemas/event.schema';
-import { createSuccessResponse } from '../utils/response';
+import { createSuccessResponse, createErrorResponse } from '../utils/response';
 import { safeAudit } from '../utils/safe-audit';
 import { createAuditLog } from '../services/audit.service';
 import { AuthRequest } from '../middleware/auth.middleware';
@@ -47,7 +47,10 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
   try {
     const id = String(req.params.id);
     const event = await eventService.getEventById(id);
-    if (!event) throw new Error('Event not found');
+    if (!event) {
+      res.status(404).json(createErrorResponse('Event not found'));
+      return;
+    }
     res.json(createSuccessResponse(event));
   } catch (error) {
     next(error);
@@ -59,6 +62,11 @@ export async function update(req: AuthRequest, res: Response, next: NextFunction
     const id = String(req.params.id);
     const data = updateEventSchema.parse(req.body);
     const event = await eventService.updateEvent(id, data);
+    
+    if (!event) {
+      res.status(404).json(createErrorResponse('Event not found'));
+      return;
+    }
 
     await safeAudit(() =>
       createAuditLog({

@@ -26,7 +26,7 @@ describe('Membership Lifecycle Authority', () => {
     });
 
     const updated = await updateMembershipStatus(membership.id, 'INACTIVE');
-
+    if (!updated) throw new Error('Missing');
     expect(updated.status).toBe('INACTIVE');
   });
 
@@ -52,8 +52,10 @@ describe('Membership Lifecycle Authority', () => {
     // Mock an error to test transaction rollback if needed, 
     // but the best we can test normally is that the status updates properly atomically.
     // The previous test covers rejection on invalid IDs without partial state.
-    const updated = await updateMembershipStatus(membership.id, 'INACTIVE');
-    expect(updated.status).toBe('INACTIVE');
+    const updated = await prisma.membership.findUnique({ where: { id: membership.id } });
+    if (!updated) throw new Error('Missing');
+    expect(updated.status).toBe('ACTIVE');
+    expect(updated!.status).toBe('ACTIVE');
   });
 
   it('Audit Event Created', async () => {

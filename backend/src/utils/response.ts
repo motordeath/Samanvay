@@ -2,6 +2,8 @@ export function createSuccessResponse<T>(data: T) {
   return {
     success: true,
     data,
+    meta: {},
+    errors: []
   };
 }
 

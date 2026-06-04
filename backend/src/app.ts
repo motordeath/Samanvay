@@ -1,4 +1,6 @@
 import express from 'express';
+import cors from 'cors';
+import { env } from './config/env';
 import { errorHandler } from './middleware/error.middleware';
 
 import authRoutes from './routes/auth.routes';
@@ -27,7 +29,26 @@ import assignmentRoutes from './modules/volunteers/assignments/routes';
 import attendanceRoutes from './modules/volunteers/attendance/routes';
 
 const app = express();
+
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  'http://localhost:3001'
+].filter(Boolean) as string[];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
 app.use(express.json());
+
+// Health check endpoint (must be before routes and 404 handler)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    layer: 'backend'
+  });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/organizations', organizationRoutes);
@@ -53,6 +74,16 @@ app.use('/api/matching', matchingRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/attendance', attendanceRoutes);
+
+// Global 404 Handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: {
+      message: 'Route not found'
+    }
+  });
+});
 
 app.use(errorHandler);
 

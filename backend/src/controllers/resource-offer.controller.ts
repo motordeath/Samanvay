@@ -70,6 +70,12 @@ export const rejectOfferController = asyncHandler(async (req: Request, res: Resp
 
 export const withdrawOfferController = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const offer = await withdrawOffer(id);
+  const { organizationId } = req.body;
+  
+  if (!organizationId) {
+    throw new ValidationError('organizationId is required in body');
+  }
+
+  const offer = await withdrawOffer(id, organizationId);
   res.status(200).json(createSuccessResponse(offer));
 });
