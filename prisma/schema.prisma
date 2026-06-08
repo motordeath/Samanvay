@@ -3,174 +3,415 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Organization {
-  id          String   @id @default(uuid())
-  name        String
-  type        String // NGO, CSR, GOVERNMENT, INSTITUTION, COMMUNITY
-  sector      String
-  description String?
-  location    String?
-  verified    Boolean  @default(false)
-  status      String   @default("ACTIVE") // ACTIVE, SUSPENDED, ARCHIVED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ENUM 
 
-  memberships    Membership[]
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  CHECKED_IN
+  CHECKED_OUT
+  COMPLETED
+  CANCELLED
+}
+
+enum VolunteerNeedStatus {
+  OPEN
+  MATCHING
+  FILLED
+  CLOSED
+  CANCELLED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model Organization {
+  id             String          @id @default(uuid())
+  name           String
+  type           String
+  sector         String
+  description    String?
+  location       String?
+  verified       Boolean         @default(false)
+  status         String          @default("ACTIVE")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   events         Event[]
-  partnerships   Partnership[]   @relation("RequestingOrg")
+  volunteers     Volunteer[]
+  memberships    Membership[]
   targetedBy     Partnership[]   @relation("TargetOrg")
-  
+  partnerships   Partnership[]   @relation("RequestingOrg")
   resourceLots   ResourceLot[]
   resourceNeeds  ResourceNeed[]
   resourceOffers ResourceOffer[]
-  transfersFrom  Transfer[]      @relation("TransferFromOrg")
   transfersTo    Transfer[]      @relation("TransferToOrg")
+  transfersFrom  Transfer[]      @relation("TransferFromOrg")
+  VolunteerNeed  VolunteerNeed[]
 }
 
 model User {
-  id           String   @id @default(uuid())
+  id           String       @id @default(uuid())
   name         String
-  email        String   @unique
+  email        String       @unique
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+  volunteers   Volunteer[]
+}
 
-  memberships Membership[]
+model Volunteer {
+  id String @id @default(uuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  bio      String?
+  location String?
+
+  experienceYears Int @default(0)
+
+  isAvailable Boolean @default(true)
+  isActive    Boolean @default(true)
+
+  volunteerCertifications VolunteerCertification[]
+  volunteerSkills         VolunteerSkill[]
+  volunteerAvailabilities VolunteerAvailability[]
+  volunteerNeeds          VolunteerNeed[]
+  volunteerInvitations    VolunteerInvitation[]
+  volunteerAssignments    VolunteerAssignment[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  Organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+}
+
+model Skill {
+  id String @id @default(uuid())
+
+  name        String  @unique
+  description String?
+
+  volunteerSkills VolunteerSkill[]
+  needSkills      VolunteerNeedSkill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VolunteerSkill {
+  id String @id @default(uuid())
+
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id])
+
+  skillId String
+  skill   Skill  @relation(fields: [skillId], references: [id])
+
+  level SkillLevel
+
+  createdAt DateTime @default(now())
+
+  @@unique([volunteerId, skillId])
+}
+
+model Certification {
+  id String @id @default(uuid())
+
+  name        String  @unique
+  description String?
+
+  volunteerCertifications VolunteerCertification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VolunteerCertification {
+  id String @id @default(uuid())
+
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id])
+
+  certificationId String
+  certification   Certification @relation(fields: [certificationId], references: [id])
+
+  issuedAt  DateTime?
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([volunteerId, certificationId])
+}
+
+model VolunteerAvailability {
+  id String @id @default(uuid())
+
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id])
+
+  dayOfWeek DayOfWeek
+
+  startTime DateTime
+  endTime   DateTime
+
+  createdAt DateTime @default(now())
+}
+
+model VolunteerNeed {
+  id String @id @default(uuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id])
+
+  title       String
+  description String?
+
+  requiredCount Int
+
+  location String?
+
+  startDate DateTime
+  endDate   DateTime
+
+  status VolunteerNeedStatus @default(OPEN)
+
+  needSkills  VolunteerNeedSkill[]
+  invitations VolunteerInvitation[]
+  assignments VolunteerAssignment[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  Volunteer   Volunteer? @relation(fields: [volunteerId], references: [id])
+  volunteerId String?
+}
+
+model VolunteerNeedSkill {
+  id String @id @default(uuid())
+
+
+  
+  
+  needId String
+  need   VolunteerNeed @relation(fields: [needId], references: [id])
+
+  skillId String
+  skill   Skill  @relation(fields: [skillId], references: [id])
+
+  requiredLevel SkillLevel
+
+  priority Int @default(1)
+
+  createdAt DateTime @default(now())
+
+  @@unique([needId, skillId])
+}
+
+model VolunteerInvitation {
+  id String @id @default(uuid())
+
+  needId String
+  need   VolunteerNeed @relation(fields: [needId], references: [id])
+
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id])
+
+  status InvitationStatus @default(PENDING)
+
+  sentAt      DateTime  @default(now())
+  respondedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([needId, volunteerId])
+}
+
+model VolunteerAssignment {
+  id String @id @default(uuid())
+
+  needId String
+  need   VolunteerNeed @relation(fields: [needId], references: [id])
+
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id])
+
+  status AssignmentStatus @default(ASSIGNED)
+
+  assignedAt  DateTime             @default(now())
+  completedAt DateTime?
+  attendance  VolunteerAttendance?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([needId, volunteerId])
+}
+
+model VolunteerAttendance {
+  id String @id @default(uuid())
+
+  assignmentId String              @unique
+  assignment   VolunteerAssignment @relation(fields: [assignmentId], references: [id])
+
+  checkInTime  DateTime?
+  checkOutTime DateTime?
+
+  verifiedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Membership {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   userId         String
   organizationId String
-  role           String // ADMIN, COORDINATOR, MEMBER
-  status         String   @default("PENDING") // INVITED, PENDING, ACTIVE, REMOVED
-  createdAt      DateTime @default(now())
-
-  user          User           @relation(fields: [userId], references: [id])
-  organization  Organization   @relation(fields: [organizationId], references: [id])
+  role           String
+  status         String       @default("PENDING")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
 
   @@unique([userId, organizationId])
 }
 
 model Partnership {
-  id                       String   @id @default(uuid())
+  id                       String       @id @default(uuid())
   requestingOrganizationId String
   targetOrganizationId     String
-  status                   String   @default("PENDING") // PENDING, ACTIVE, REJECTED, ENDED
+  status                   String       @default("PENDING")
   requestedById            String
   createdById              String?
   updatedById              String?
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
-
-  requestingOrganization Organization @relation("RequestingOrg", fields: [requestingOrganizationId], references: [id])
-  targetOrganization     Organization @relation("TargetOrg", fields: [targetOrganizationId], references: [id])
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+  targetOrganization       Organization @relation("TargetOrg", fields: [targetOrganizationId], references: [id])
+  requestingOrganization   Organization @relation("RequestingOrg", fields: [requestingOrganizationId], references: [id])
 
   @@unique([requestingOrganizationId, targetOrganizationId])
 }
 
 model Event {
-  id             String   @id @default(uuid())
+  id             String          @id @default(uuid())
   organizationId String
   title          String
   type           String
   description    String?
   startDate      DateTime
   endDate        DateTime
-  status         String   @default("DRAFT") // DRAFT, ACTIVE, COMPLETED, CANCELLED
+  status         String          @default("DRAFT")
   createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization   Organization   @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id])
   resourceNeeds  ResourceNeed[]
+  volunteerNeeds VolunteerNeed[]
 }
 
 model Resource {
-  id          String   @id @default(uuid())
-  name        String   @unique
+  id          String         @id @default(uuid())
+  name        String         @unique
   description String?
   unit        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  lots      ResourceLot[]
-  needs     ResourceNeed[]
-  transfers Transfer[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  lots        ResourceLot[]
+  needs       ResourceNeed[]
+  transfers   Transfer[]
 }
 
 model ResourceLot {
-  id                String   @id @default(uuid())
+  id                String          @id @default(uuid())
   organizationId    String
   resourceId        String
   quantity          Int
   availableQuantity Int
   notes             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  organization Organization    @relation(fields: [organizationId], references: [id])
-  resource     Resource        @relation(fields: [resourceId], references: [id])
-  offers       ResourceOffer[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  resource          Resource        @relation(fields: [resourceId], references: [id])
+  organization      Organization    @relation(fields: [organizationId], references: [id])
+  offers            ResourceOffer[]
 }
 
 model ResourceNeed {
-  id             String   @id @default(uuid())
+  id             String          @id @default(uuid())
   organizationId String
   eventId        String?
   resourceId     String
   quantity       Int
   notes          String?
-  status         String   @default("OPEN") // OPEN, PARTIALLY_FULFILLED, FULFILLED, CANCELLED
+  status         String          @default("OPEN")
   createdById    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization Organization    @relation(fields: [organizationId], references: [id])
-  resource     Resource        @relation(fields: [resourceId], references: [id])
-  event        Event?          @relation(fields: [eventId], references: [id])
-  offers       ResourceOffer[]
-  transfers    Transfer[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  event          Event?          @relation(fields: [eventId], references: [id])
+  resource       Resource        @relation(fields: [resourceId], references: [id])
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  offers         ResourceOffer[]
+  transfers      Transfer[]
 }
 
 model ResourceOffer {
-  id                     String   @id @default(uuid())
+  id                     String       @id @default(uuid())
   needId                 String
   offeringOrganizationId String
   resourceLotId          String
   offeredQuantity        Int
   notes                  String?
-  status                 String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, WITHDRAWN
+  status                 String       @default("PENDING")
   createdById            String
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-
-  need                 ResourceNeed @relation(fields: [needId], references: [id])
-  offeringOrganization Organization @relation(fields: [offeringOrganizationId], references: [id])
-  resourceLot          ResourceLot  @relation(fields: [resourceLotId], references: [id])
-  transfers            Transfer[]
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  resourceLot            ResourceLot  @relation(fields: [resourceLotId], references: [id])
+  offeringOrganization   Organization @relation(fields: [offeringOrganizationId], references: [id])
+  need                   ResourceNeed @relation(fields: [needId], references: [id])
+  transfers              Transfer[]
 }
 
 model Transfer {
-  id                 String   @id @default(uuid())
+  id                 String        @id @default(uuid())
   needId             String
   offerId            String
   resourceId         String
   fromOrganizationId String
   toOrganizationId   String
   quantity           Int
-  status             String   @default("PENDING") // PENDING, IN_TRANSIT, COMPLETED, CANCELLED
+  status             String        @default("PENDING")
   approvedById       String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  need             ResourceNeed  @relation(fields: [needId], references: [id])
-  offer            ResourceOffer @relation(fields: [offerId], references: [id])
-  resource         Resource      @relation(fields: [resourceId], references: [id])
-  fromOrganization Organization  @relation("TransferFromOrg", fields: [fromOrganizationId], references: [id])
-  toOrganization   Organization  @relation("TransferToOrg", fields: [toOrganizationId], references: [id])
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  toOrganization     Organization  @relation("TransferToOrg", fields: [toOrganizationId], references: [id])
+  fromOrganization   Organization  @relation("TransferFromOrg", fields: [fromOrganizationId], references: [id])
+  resource           Resource      @relation(fields: [resourceId], references: [id])
+  offer              ResourceOffer @relation(fields: [offerId], references: [id])
+  need               ResourceNeed  @relation(fields: [needId], references: [id])
 }
