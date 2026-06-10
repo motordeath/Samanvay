@@ -41,7 +41,8 @@ export const getResourceOfferController = asyncHandler(async (req: Request, res:
  */
 export const acceptOfferController = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { organizationId, userId } = req.body;
+  const { organizationId } = req.body;
+  const userId = (req as any).user?.id || req.body.userId;
   
   if (!organizationId || !userId) {
     throw new ValidationError('organizationId and userId are required in body');

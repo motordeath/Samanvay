@@ -43,30 +43,34 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ lots, isLoading 
   return (
     <div className="flex flex-col gap-2">
       {lots.map((lot) => {
+        if (import.meta.env.VITE_STABILIZATION_DEBUG && !lot.resource) {
+          console.warn('[INVALID_RESOURCE_LOT]', lot.id);
+        }
+        
         const status = computeInventoryStatus(lot.quantity, lot.availableQuantity);
         
         return (
           <div 
             key={lot.id}
             onClick={() => navigate(`/dashboard/inventory/${lot.id}`)}
-            className="group flex items-center justify-between p-4 rounded-xl border border-slate-800/50 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700 transition-all cursor-pointer"
+            className="group flex items-center justify-between p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-elevated)] transition-all cursor-pointer odd:bg-[var(--color-surface)] even:bg-[var(--color-surface-muted)]"
           >
             {/* Left Side: Progressive Density */}
             <div className="flex flex-col gap-1 min-w-0 pr-4">
               {/* Primary */}
-              <div className="font-medium text-white truncate text-base">
-                {lot.resource.name}
+              <div className="font-medium text-[var(--color-text-primary)] truncate text-base">
+                {lot.resource?.name ?? 'Unknown Resource'}
               </div>
               
               {/* Secondary */}
-              <div className="text-xs text-slate-400 flex items-center gap-2">
-                <span>{lot.resource.unit}</span>
-                <span className="w-1 h-1 rounded-full bg-slate-700" />
+              <div className="text-xs text-[var(--color-text-secondary)] flex items-center gap-2">
+                <span>{lot.resource?.unit ?? ''}</span>
+                <span className="w-1 h-1 rounded-full bg-[var(--color-border)]" />
                 <span className="truncate max-w-[200px]">{lot.notes || 'Main Storage'}</span>
               </div>
               
               {/* Tertiary */}
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mt-1">
+              <div className="text-[10px] text-[var(--color-text-secondary)]/80 uppercase tracking-wider font-semibold mt-1">
                 Updated {new Date(lot.updatedAt).toLocaleDateString()}
               </div>
             </div>
@@ -74,8 +78,8 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ lots, isLoading 
             {/* Right Side: Status + Quantity */}
             <div className="flex flex-col items-end gap-2 shrink-0">
               <InventoryStatusBadge status={status} />
-              <div className="text-xl font-light text-white tracking-tight">
-                {lot.availableQuantity} <span className="text-sm text-slate-500">/ {lot.quantity}</span>
+              <div className="text-xl font-medium text-[var(--color-text-primary)] tracking-tight">
+                {lot.availableQuantity} <span className="text-sm text-[var(--color-text-secondary)]">/ {lot.quantity}</span>
               </div>
             </div>
           </div>

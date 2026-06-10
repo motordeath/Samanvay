@@ -63,6 +63,9 @@ export const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ onClos
 
       const res = await api<{ success: boolean }>('/api/transfers/direct', {
         method: 'POST',
+        headers: {
+          'x-org-id': orgId
+        },
         body: JSON.stringify(payload)
       });
 
@@ -77,25 +80,25 @@ export const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-        <div className="px-6 py-4 border-b border-slate-800/50 flex items-center justify-between bg-slate-900/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--color-canvas)]/80">
+      <div className="w-full max-w-md bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-xl shadow-xl overflow-hidden flex flex-col">
+        <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-surface-elevated)]">
           <div>
-            <h2 className="text-lg font-medium text-white tracking-tight">Direct Transfer</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Push supplies to an organization</p>
+            <h2 className="text-lg font-medium text-[var(--color-text-primary)] tracking-tight">Direct Transfer</h2>
+            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Push supplies to an organization</p>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-1">
+          <button onClick={onClose} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-300">Destination Organization</label>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Destination Organization</label>
             <select
               value={toOrganizationId}
               onChange={e => setToOrganizationId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full bg-[var(--color-canvas)] border border-[var(--color-border)] rounded-md px-3 py-2.5 text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/30"
               required
             >
               <option value="" disabled>Select Destination</option>
@@ -106,11 +109,11 @@ export const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ onClos
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-300">Resource Category</label>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Resource Category</label>
             <select
               value={resourceId}
               onChange={e => setResourceId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full bg-[var(--color-canvas)] border border-[var(--color-border)] rounded-md px-3 py-2.5 text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/30"
               required
             >
               <option value="" disabled>Select Resource</option>
@@ -121,25 +124,25 @@ export const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ onClos
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-300">Quantity to Transfer</label>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Quantity to Transfer</label>
             <input
               type="number"
               min="1"
               value={quantity}
               onChange={e => setQuantity(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full bg-[var(--color-canvas)] border border-[var(--color-border)] rounded-md px-3 py-2.5 text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/30"
               placeholder="e.g. 500"
               required
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-300">Operational Notes</label>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Operational Notes</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={3}
-              className="w-full bg-slate-950 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+              className="w-full bg-[var(--color-canvas)] border border-[var(--color-border)] rounded-md px-3 py-2.5 text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/30 resize-none"
               placeholder="Delivery instructions, driver details..."
             />
           </div>
@@ -148,7 +151,7 @@ export const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ onClos
             <button
               type="submit"
               disabled={isSubmitting || !toOrganizationId || !resourceId || !quantity}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-md font-medium transition-colors disabled:opacity-50"
             >
               <Truck className="w-4 h-4" />
               {isSubmitting ? 'Initiating...' : 'Initiate Transfer'}

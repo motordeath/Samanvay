@@ -64,22 +64,22 @@ export const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({ onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-        <div className="px-6 py-4 border-b border-slate-800/50 flex items-center justify-between bg-slate-900/50">
-          <h2 className="text-lg font-medium text-white">Add Inventory Record</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-1">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--color-canvas)]/80">
+      <div className="w-full max-w-md bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-xl shadow-xl overflow-hidden flex flex-col">
+        <div className="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-surface-elevated)]">
+          <h2 className="text-lg font-medium text-[var(--color-text-primary)]">Add Inventory Record</h2>
+          <button onClick={onClose} className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-300">Resource Type</label>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Resource Type</label>
             <select
               value={resourceId}
               onChange={e => setResourceId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full bg-[var(--color-canvas)] border border-[var(--color-border)] rounded-md px-3 py-2.5 text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/30"
               required
             >
               {resources.map(r => (
@@ -89,25 +89,25 @@ export const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({ onCl
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-300">Initial Quantity</label>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Initial Quantity</label>
             <input
               type="number"
               min="1"
               value={quantity}
               onChange={e => setQuantity(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full bg-[var(--color-canvas)] border border-[var(--color-border)] rounded-md px-3 py-2.5 text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/30"
               placeholder="e.g. 100"
               required
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-300">Location / Notes <span className="text-slate-500 font-normal">(Optional)</span></label>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">Location / Notes <span className="text-[var(--color-text-secondary)]/70 font-normal">(Optional)</span></label>
             <input
               type="text"
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/50 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full bg-[var(--color-canvas)] border border-[var(--color-border)] rounded-md px-3 py-2.5 text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/30"
               placeholder="Warehouse A, Aisle 3"
             />
           </div>
@@ -116,7 +116,7 @@ export const CreateInventoryModal: React.FC<CreateInventoryModalProps> = ({ onCl
             <button
               type="submit"
               disabled={isSubmitting || !resourceId || !quantity}
-              className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="w-full py-2.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-md font-medium transition-colors disabled:opacity-50"
             >
               {isSubmitting ? 'Adding...' : 'Add to Inventory'}
             </button>

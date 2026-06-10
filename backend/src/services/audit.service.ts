@@ -12,11 +12,29 @@ export interface CreateAuditLogParams {
 
 export async function createAuditLog(params: CreateAuditLogParams, tx?: any) {
   const client = tx || prisma;
+  let userId = params.userId;
+  if (userId === 'system') {
+    userId = undefined;
+  } else if (userId) {
+    const userExists = await client.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+      userId = undefined;
+    }
+  }
+
+  let organizationId = params.organizationId;
+  if (organizationId) {
+    const orgExists = await client.organization.findUnique({ where: { id: organizationId } });
+    if (!orgExists) {
+      organizationId = undefined;
+    }
+  }
+
   return await client.auditLog.create({
     data: {
       action: params.action,
-      userId: params.userId,
-      organizationId: params.organizationId,
+      userId: userId || null,
+      organizationId: organizationId || null,
       entityType: params.entityType,
       entityId: params.entityId,
       metadata: params.metadata || null,

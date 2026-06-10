@@ -54,6 +54,10 @@ export class TransferService {
           entityType: 'TRANSFER' as any,
           entityId: transferId,
           userId,
+          metadata: {
+            previousStatus: transfer.status,
+            newStatus,
+          },
         }, tx);
       }
       
@@ -70,6 +74,18 @@ export class TransferService {
 
         // Mark allocations as completed
         await allocationService.completeAllocation(tx, transferId);
+
+        // If there are no reservations/allocations, the transfer was directly offer-backed.
+        // acceptOffer already decremented availableQuantity. Since recordLedgerEntry(TRANSFER_OUT)
+        // decremented availableQuantity again, we must increment it here to prevent double-decrementing.
+        if (transfer.allocations.length === 0) {
+          await tx.resourceLot.update({
+            where: { id: resourceLotId },
+            data: {
+              availableQuantity: { increment: transfer.quantity }
+            }
+          });
+        }
 
         // Optional: If this transfer was backed by a reservation, we need to release the HOLD
         // Since the TRANSFER_OUT already decremented the inventory, we don't want RESERVATION_RELEASE 
@@ -102,7 +118,38 @@ export class TransferService {
           entityType: 'TRANSFER' as any,
           entityId: transferId,
           userId,
+          metadata: {
+            previousStatus: transfer.status,
+            newStatus,
+          },
         }, tx);
+
+        // Recalculate and update ResourceNeed status
+        await tx.$queryRaw`
+          SELECT id
+          FROM "ResourceNeed"
+          WHERE id = ${transfer.needId}
+          FOR UPDATE
+        `;
+        const need = await tx.resourceNeed.findUnique({ where: { id: transfer.needId } });
+        if (need) {
+          const completedTransfers = await tx.transfer.findMany({
+            where: { needId: transfer.needId, status: 'COMPLETED' },
+          });
+          const totalCompleted = completedTransfers.reduce((sum, t) => sum + t.quantity, 0);
+
+          let needStatus = 'OPEN';
+          if (totalCompleted >= need.quantity) {
+            needStatus = 'FULFILLED';
+          } else if (totalCompleted > 0) {
+            needStatus = 'PARTIALLY_FULFILLED';
+          }
+
+          await tx.resourceNeed.update({
+            where: { id: need.id },
+            data: { status: needStatus },
+          });
+        }
       }
 
       if (newStatus === 'CANCELLED' || newStatus === 'FAILED') {
@@ -111,6 +158,24 @@ export class TransferService {
           await tx.resourceOffer.update({
             where: { id: transfer.offerId },
             data: { status: 'PENDING' },
+          });
+        }
+
+        // Revert inventory reservation
+        if (transfer.status === 'PENDING') {
+          await tx.resourceLot.update({
+            where: { id: resourceLotId },
+            data: {
+              availableQuantity: { increment: transfer.quantity }
+            }
+          });
+        } else if (['APPROVED', 'IN_TRANSIT'].includes(transfer.status)) {
+          await tx.resourceLot.update({
+            where: { id: resourceLotId },
+            data: {
+              reservedQuantity: { decrement: transfer.quantity },
+              availableQuantity: { increment: transfer.quantity }
+            }
           });
         }
 
@@ -129,6 +194,10 @@ export class TransferService {
           entityType: 'TRANSFER' as any,
           entityId: transferId,
           userId,
+          metadata: {
+            previousStatus: transfer.status,
+            newStatus,
+          },
         }, tx);
       }
 
@@ -141,11 +210,22 @@ export class TransferService {
   }
 
   async getTransfers(filters: any, skip: number = 0, take: number = 20) {
-    return await prisma.transfer.findMany({
+    const transfers = await prisma.transfer.findMany({
       where: filters,
       skip,
       take,
+      include: {
+        resource: true,
+        fromOrganization: true,
+        toOrganization: true
+      }
     });
+
+    if (process.env.STABILIZATION_DEBUG && transfers.length > 0) {
+      console.log('[TRANSFERS]', JSON.stringify(transfers[0], null, 2));
+    }
+
+    return transfers;
   }
 }
 

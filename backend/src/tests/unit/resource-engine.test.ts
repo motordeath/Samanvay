@@ -106,7 +106,7 @@ describe('Resource Engine Unit Tests', () => {
     expect(updatedLot?.availableQuantity).toBe(60);
 
     // Cancel transfer
-    await updateTransferStatus(transfer.id, 'CANCELLED');
+    await updateTransferStatus(transfer.id, 'CANCELLED', user.id);
 
     // Inventory should be restored to 100
     updatedLot = await prisma.resourceLot.findUnique({ where: { id: lot.id } });
@@ -146,11 +146,12 @@ describe('Resource Engine Unit Tests', () => {
     });
 
     const { transfer } = await acceptOffer(offer.id, org2.id, user.id);
-    await updateTransferStatus(transfer.id, 'IN_TRANSIT');
-    await updateTransferStatus(transfer.id, 'COMPLETED');
+    await updateTransferStatus(transfer.id, 'APPROVED', user.id);
+    await updateTransferStatus(transfer.id, 'IN_TRANSIT', user.id);
+    await updateTransferStatus(transfer.id, 'COMPLETED', user.id);
 
     // Can't cancel a completed transfer
-    await expect(updateTransferStatus(transfer.id, 'CANCELLED')).rejects.toThrow('Invalid state transition');
+    await expect(updateTransferStatus(transfer.id, 'CANCELLED', user.id)).rejects.toThrow('Invalid state transition');
   });
 
   test('Need fulfillment calculation', async () => {
@@ -167,14 +168,15 @@ describe('Resource Engine Unit Tests', () => {
     });
 
     const { transfer } = await acceptOffer(offer.id, org2.id, user.id);
-    await updateTransferStatus(transfer.id, 'IN_TRANSIT');
+    await updateTransferStatus(transfer.id, 'APPROVED', user.id);
+    await updateTransferStatus(transfer.id, 'IN_TRANSIT', user.id);
 
     // Status is still OPEN because transfer is IN_TRANSIT
     let updatedNeed = await prisma.resourceNeed.findUnique({ where: { id: need.id } });
     expect(updatedNeed?.status).toBe('OPEN');
 
     // Complete the transfer
-    await updateTransferStatus(transfer.id, 'COMPLETED');
+    await updateTransferStatus(transfer.id, 'COMPLETED', user.id);
 
     // Now it should be FULFILLED
     updatedNeed = await prisma.resourceNeed.findUnique({ where: { id: need.id } });

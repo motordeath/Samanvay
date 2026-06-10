@@ -40,7 +40,15 @@ describe('Audit Accuracy (HIGH-10)', () => {
       .send({ organizationId: org.id });
 
     expect(acceptRes.status).toBe(200);
-    const transferId = acceptRes.body.data.id;
+    const transferId = acceptRes.body.data.transfer.id;
+
+    // Approve/Accept the transfer (PENDING -> APPROVED)
+    const approveRes = await request(app)
+      .patch(`/api/transfers/${transferId}/accept`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ organizationId: org.id });
+
+    expect(approveRes.status).toBe(200);
 
     // Start transfer -> IN_TRANSIT
     const startRes = await request(app)
@@ -48,7 +56,10 @@ describe('Audit Accuracy (HIGH-10)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ organizationId: org.id });
 
+    console.log("START RES STATUS:", startRes.status);
+    console.log("START RES BODY:", JSON.stringify(startRes.body));
     expect(startRes.status).toBe(200);
+
 
     // Cancel transfer -> CANCELLED
     const cancelRes = await request(app)
@@ -67,6 +78,7 @@ describe('Audit Accuracy (HIGH-10)', () => {
       orderBy: { createdAt: 'desc' },
     });
 
+    console.log("AUDIT LOG FOUND:", JSON.stringify(auditLog));
     expect(auditLog).toBeDefined();
     const meta = auditLog?.metadata as any;
     expect(meta.previousStatus).toBe('IN_TRANSIT');

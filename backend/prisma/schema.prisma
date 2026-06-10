@@ -7,21 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum VerificationStatus {
-  UNVERIFIED
-  PENDING
-  VERIFIED
-  REJECTED
-}
-
 model OrganizationOperationalRegion {
-  id             String @id @default(uuid())
+  id             String       @id @default(uuid())
   organizationId String
   regionName     String
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Organization {
@@ -43,19 +34,19 @@ model Organization {
   status                      String                          @default("ACTIVE")
   createdAt                   DateTime                        @default(now())
   updatedAt                   DateTime                        @updatedAt
-  operationalRegions          OrganizationOperationalRegion[]
+  AuditLog                    AuditLog[]
   events                      Event[]
+  financialLedgerEntries      FinancialLedgerEntry[]
   memberships                 Membership[]
+  operationalRegions          OrganizationOperationalRegion[]
   partnerships                Partnership[]                   @relation("RequestingOrg")
   targetedBy                  Partnership[]                   @relation("TargetOrg")
+  reservations                Reservation[]
   resourceLots                ResourceLot[]
   resourceNeeds               ResourceNeed[]
   resourceOffers              ResourceOffer[]
-  reservations                Reservation[]
   transfersFrom               Transfer[]                      @relation("TransferFromOrg")
   transfersTo                 Transfer[]                      @relation("TransferToOrg")
-  AuditLog                    AuditLog[]
-  financialLedgerEntries      FinancialLedgerEntry[]
   assignments                 VolunteerAssignment[]
 }
 
@@ -66,8 +57,8 @@ model User {
   passwordHash String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  memberships  Membership[]
   AuditLog     AuditLog[]
+  memberships  Membership[]
   volunteer    Volunteer?
 }
 
@@ -100,13 +91,6 @@ model Partnership {
   @@unique([requestingOrganizationId, targetOrganizationId])
 }
 
-enum EventStatus {
-  DRAFT
-  PUBLISHED
-  CANCELLED
-  COMPLETED
-}
-
 model Event {
   id                     String                 @id @default(uuid())
   organizationId         String
@@ -120,10 +104,10 @@ model Event {
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   organization           Organization           @relation(fields: [organizationId], references: [id])
+  financialLedgerEntries FinancialLedgerEntry[]
+  reservations           Reservation[]
   resourceNeeds          ResourceNeed[]
   volunteerNeeds         VolunteerNeed[]
-  reservations           Reservation[]
-  financialLedgerEntries FinancialLedgerEntry[]
 }
 
 model Resource {
@@ -133,11 +117,11 @@ model Resource {
   unit                   String
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
+  inventoryLedgerEntries InventoryLedgerEntry[]
+  reservations           Reservation[]
   lots                   ResourceLot[]
   needs                  ResourceNeed[]
   transfers              Transfer[]
-  reservations           Reservation[]
-  inventoryLedgerEntries InventoryLedgerEntry[]
 }
 
 model ResourceLot {
@@ -145,11 +129,11 @@ model ResourceLot {
   organizationId    String
   resourceId        String
   quantity          Int
-  reservedQuantity  Int             @default(0)
   availableQuantity Int
   notes             String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+  reservedQuantity  Int             @default(0)
   organization      Organization    @relation(fields: [organizationId], references: [id])
   resource          Resource        @relation(fields: [resourceId], references: [id])
   offers            ResourceOffer[]
@@ -202,50 +186,48 @@ model Transfer {
   approvedById           String?
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
+  financialLedgerEntries FinancialLedgerEntry[]
+  ledgerEntries          InventoryLedgerEntry[]
+  allocations            ReservationAllocation[]
   fromOrganization       Organization            @relation("TransferFromOrg", fields: [fromOrganizationId], references: [id])
   need                   ResourceNeed            @relation(fields: [needId], references: [id])
   offer                  ResourceOffer           @relation(fields: [offerId], references: [id])
   resource               Resource                @relation(fields: [resourceId], references: [id])
   toOrganization         Organization            @relation("TransferToOrg", fields: [toOrganizationId], references: [id])
-  allocations            ReservationAllocation[]
-  ledgerEntries          InventoryLedgerEntry[]
-  financialLedgerEntries FinancialLedgerEntry[]
 }
 
 model Reservation {
-  id                String            @id @default(uuid())
-  organizationId    String
-  resourceId        String
-  eventId           String?
-  transferId        String?
-  requestedQuantity Int
-  reservedQuantity  Int               @default(0)
-  allocatedQuantity Int               @default(0)
-  status            ReservationStatus @default(PENDING)
-  expiresAt         DateTime?
-  createdById       String
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
+  id                     String                  @id @default(uuid())
+  organizationId         String
+  resourceId             String
+  eventId                String?
+  transferId             String?
+  requestedQuantity      Int
+  reservedQuantity       Int                     @default(0)
+  allocatedQuantity      Int                     @default(0)
+  status                 ReservationStatus       @default(PENDING)
+  expiresAt              DateTime?
+  createdById            String
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  financialLedgerEntries FinancialLedgerEntry[]
+  ledgerEntries          InventoryLedgerEntry[]
+  event                  Event?                  @relation(fields: [eventId], references: [id])
   organization           Organization            @relation(fields: [organizationId], references: [id])
   resource               Resource                @relation(fields: [resourceId], references: [id])
-  event                  Event?                  @relation(fields: [eventId], references: [id])
   allocations            ReservationAllocation[]
-  ledgerEntries          InventoryLedgerEntry[]
-  financialLedgerEntries FinancialLedgerEntry[]
 }
 
 model ReservationAllocation {
-  id            String   @id @default(uuid())
+  id            String      @id @default(uuid())
   reservationId String
   transferId    String
   quantity      Int
-  status        String   @default("PENDING")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  reservation Reservation @relation(fields: [reservationId], references: [id])
-  transfer    Transfer    @relation(fields: [transferId], references: [id])
+  status        String      @default("PENDING")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  transfer      Transfer    @relation(fields: [transferId], references: [id])
 }
 
 model InventoryLedgerEntry {
@@ -257,28 +239,269 @@ model InventoryLedgerEntry {
   quantity      Int
   createdById   String
   createdAt     DateTime            @default(now())
-
-  resource    Resource     @relation(fields: [resourceId], references: [id])
-  reservation Reservation? @relation(fields: [reservationId], references: [id])
-  transfer    Transfer?    @relation(fields: [transferId], references: [id])
+  reservation   Reservation?        @relation(fields: [reservationId], references: [id])
+  resource      Resource            @relation(fields: [resourceId], references: [id])
+  transfer      Transfer?           @relation(fields: [transferId], references: [id])
 }
 
 model FinancialLedgerEntry {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   organizationId String
   eventId        String?
   transferId     String?
   reservationId  String?
   type           String
-  amount         Decimal  @db.Decimal(18, 2)
-  currency       String   @default("USD")
+  amount         Decimal      @db.Decimal(18, 2)
+  currency       String       @default("USD")
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  event          Event?       @relation(fields: [eventId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  reservation    Reservation? @relation(fields: [reservationId], references: [id])
+  transfer       Transfer?    @relation(fields: [transferId], references: [id])
+}
+
+model AuditLog {
+  id             String          @id @default(uuid())
+  action         AuditAction
+  userId         String?
+  organizationId String?
+  entityType     AuditEntityType
+  entityId       String
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  organization   Organization?   @relation(fields: [organizationId], references: [id])
+  user           User?           @relation(fields: [userId], references: [id])
+}
+
+model VolunteerOperationalRegion {
+  id          String    @id @default(uuid())
+  volunteerId String
+  regionName  String
+  createdAt   DateTime  @default(now())
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+}
+
+model Volunteer {
+  id                 String                       @id @default(uuid())
+  userId             String                       @unique
+  fullName           String                       @default("")
+  phoneNumber        String                       @default("")
+  verificationStatus VerificationStatus           @default(UNVERIFIED)
+  homeLocation       String?
+  bio                String?
+  location           String?
+  experienceYears    Int?
+  isAvailable        Boolean                      @default(true)
+  isActive           Boolean                      @default(true)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  user               User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments        VolunteerAssignment[]
+  availability       VolunteerAvailability[]
+  certifications     VolunteerCertification[]
+  invitations        VolunteerInvitation[]
+  operationalRegions VolunteerOperationalRegion[]
+  skills             VolunteerSkill[]
+}
+
+model Skill {
+  id         String               @id @default(uuid())
+  name       String               @unique
+  needSkills VolunteerNeedSkill[]
+  volunteers VolunteerSkill[]
+}
+
+model VolunteerSkill {
+  id          String     @id @default(uuid())
+  volunteerId String
+  skillId     String
+  level       SkillLevel
+  skill       Skill      @relation(fields: [skillId], references: [id])
+  volunteer   Volunteer  @relation(fields: [volunteerId], references: [id])
+
+  @@unique([volunteerId, skillId])
+}
+
+model Certification {
+  id         String                   @id @default(uuid())
+  name       String                   @unique
+  volunteers VolunteerCertification[]
+}
+
+model VolunteerCertification {
+  id              String        @id @default(uuid())
+  volunteerId     String
+  certificationId String
+  issuedAt        DateTime?
+  expiresAt       DateTime?
+  certification   Certification @relation(fields: [certificationId], references: [id])
+  volunteer       Volunteer     @relation(fields: [volunteerId], references: [id])
+
+  @@unique([volunteerId, certificationId])
+}
+
+model VolunteerAvailability {
+  id          String    @id @default(uuid())
+  volunteerId String
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  isDeleted   Boolean   @default(false)
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id])
+}
+
+model VolunteerNeed {
+  id             String                @id @default(uuid())
+  organizationId String
+  eventId        String?
+  title          String
+  description    String?
+  requiredCount  Int
+  location       String?
+  startDate      DateTime
+  endDate        DateTime
+  status         VolunteerNeedStatus   @default(OPEN)
+  createdBy      String
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  assignments    VolunteerAssignment[]
+  invitations    VolunteerInvitation[]
+  event          Event?                @relation(fields: [eventId], references: [id])
+  skills         VolunteerNeedSkill[]
+
+  @@index([status])
+  @@index([organizationId])
+}
+
+model VolunteerNeedSkill {
+  id            String        @id @default(uuid())
+  needId        String
+  skillId       String
+  requiredLevel SkillLevel
+  need          VolunteerNeed @relation(fields: [needId], references: [id])
+  skill         Skill         @relation(fields: [skillId], references: [id])
+
+  @@unique([needId, skillId])
+}
+
+model VolunteerInvitation {
+  id          String           @id @default(uuid())
+  volunteerId String
+  needId      String
+  status      InvitationStatus @default(PENDING)
+  sentAt      DateTime         @default(now())
+  respondedAt DateTime?
+  expiresAt   DateTime?
+  createdBy   String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  need        VolunteerNeed    @relation(fields: [needId], references: [id])
+  volunteer   Volunteer        @relation(fields: [volunteerId], references: [id])
+
+  @@unique([volunteerId, needId])
+  @@index([volunteerId])
+  @@index([needId])
+  @@index([status])
+}
+
+model VolunteerAssignment {
+  id             String               @id @default(uuid())
+  volunteerId    String
+  needId         String?
+  status         AssignmentStatus     @default(ASSIGNED)
+  assignedAt     DateTime             @default(now())
+  completedAt    DateTime?
+  createdBy      String
+  endDate        DateTime?
+  location       String?
+  notes          String?
+  organizationId String?
+  startDate      DateTime             @default(now())
+  title          String               @default("General Assignment")
+  need           VolunteerNeed?       @relation(fields: [needId], references: [id], onDelete: Restrict)
+  organization   Organization?        @relation(fields: [organizationId], references: [id])
+  volunteer      Volunteer            @relation(fields: [volunteerId], references: [id])
+  attendance     VolunteerAttendance?
+
+  @@unique([volunteerId, needId])
+  @@index([volunteerId])
+  @@index([needId])
+  @@index([status])
+}
+
+model VolunteerAttendance {
+  id                 String              @id @default(uuid())
+  assignmentId       String              @unique
+  checkInTime        DateTime?
+  checkOutTime       DateTime?
+  verifiedBy         String?
+  verificationMethod String?
+  assignment         VolunteerAssignment @relation(fields: [assignmentId], references: [id])
+
+  @@index([assignmentId])
+}
+
+model VolunteerAudit {
+  id          String   @id @default(uuid())
+  volunteerId String?
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id             String   @id @default(uuid())
+  userId         String
+  organizationId String?
+  type           String
+  title          String
+  body           String
+  isRead         Boolean  @default(false)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model ActivityEvent {
+  id             String   @id @default(uuid())
+  type           String
+  actorId        String?
+  organizationId String?
+  operationId    String?
+  message        String
   metadata       Json?
   createdAt      DateTime @default(now())
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  event        Event?       @relation(fields: [eventId], references: [id])
-  transfer     Transfer?    @relation(fields: [transferId], references: [id])
-  reservation  Reservation? @relation(fields: [reservationId], references: [id])
+  @@index([organizationId])
+  @@index([operationId])
+  @@index([createdAt])
+  @@index([actorId])
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
 }
 
 enum AuditAction {
@@ -315,20 +538,6 @@ enum AuditEntityType {
   TRANSFER
   RESERVATION
   INVENTORY_LEDGER
-}
-
-model AuditLog {
-  id             String          @id @default(uuid())
-  action         AuditAction
-  userId         String?
-  organizationId String?
-  entityType     AuditEntityType
-  entityId       String
-  metadata       Json?
-  createdAt      DateTime        @default(now())
-
-  user         User?         @relation(fields: [userId], references: [id])
-  organization Organization? @relation(fields: [organizationId], references: [id])
 }
 
 enum TransferStatus {
@@ -387,243 +596,4 @@ enum AssignmentStatus {
   CHECKED_OUT
   COMPLETED
   CANCELLED
-}
-
-model VolunteerOperationalRegion {
-  id          String @id @default(uuid())
-  volunteerId String
-  regionName  String
-
-  volunteer Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-}
-
-model Volunteer {
-  id                 String             @id @default(uuid())
-  userId             String             @unique
-  fullName           String             @default("")
-  phoneNumber        String             @default("")
-  verificationStatus VerificationStatus @default(UNVERIFIED)
-  homeLocation       String?
-  bio                String?
-  location           String?
-  experienceYears    Int?
-  isAvailable        Boolean            @default(true)
-  isActive           Boolean            @default(true)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  user               User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  operationalRegions VolunteerOperationalRegion[]
-
-  skills         VolunteerSkill[]
-  certifications VolunteerCertification[]
-  availability   VolunteerAvailability[]
-  invitations    VolunteerInvitation[]
-  assignments    VolunteerAssignment[]
-}
-
-model Skill {
-  id         String               @id @default(uuid())
-  name       String               @unique
-  volunteers VolunteerSkill[]
-  needSkills VolunteerNeedSkill[]
-}
-
-model VolunteerSkill {
-  id          String     @id @default(uuid())
-  volunteerId String
-  skillId     String
-  level       SkillLevel
-
-  volunteer Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
-  skill     Skill     @relation(fields: [skillId], references: [id], onDelete: Restrict)
-
-  @@unique([volunteerId, skillId])
-}
-
-model Certification {
-  id         String                   @id @default(uuid())
-  name       String                   @unique
-  volunteers VolunteerCertification[]
-}
-
-model VolunteerCertification {
-  id              String    @id @default(uuid())
-  volunteerId     String
-  certificationId String
-  issuedAt        DateTime?
-  expiresAt       DateTime?
-
-  volunteer     Volunteer     @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
-  certification Certification @relation(fields: [certificationId], references: [id], onDelete: Restrict)
-
-  @@unique([volunteerId, certificationId])
-}
-
-model VolunteerAvailability {
-  id          String  @id @default(uuid())
-  volunteerId String
-  dayOfWeek   Int
-  startTime   String
-  endTime     String
-  isDeleted   Boolean @default(false)
-
-  volunteer Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
-}
-
-model VolunteerNeed {
-  id             String              @id @default(uuid())
-  organizationId String
-  eventId        String?
-  title          String
-  description    String?
-  requiredCount  Int
-  location       String?
-  startDate      DateTime
-  endDate        DateTime
-  status         VolunteerNeedStatus @default(OPEN)
-  createdBy      String
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-
-  event Event? @relation(fields: [eventId], references: [id])
-
-  skills      VolunteerNeedSkill[]
-  invitations VolunteerInvitation[]
-  assignments VolunteerAssignment[]
-
-  @@index([status])
-  @@index([organizationId])
-}
-
-model VolunteerNeedSkill {
-  id            String     @id @default(uuid())
-  needId        String
-  skillId       String
-  requiredLevel SkillLevel
-
-  need  VolunteerNeed @relation(fields: [needId], references: [id], onDelete: Restrict)
-  skill Skill         @relation(fields: [skillId], references: [id], onDelete: Restrict)
-
-  @@unique([needId, skillId])
-}
-
-model VolunteerInvitation {
-  id          String           @id @default(uuid())
-  volunteerId String
-  needId      String
-  status      InvitationStatus @default(PENDING)
-  sentAt      DateTime         @default(now())
-  respondedAt DateTime?
-  expiresAt   DateTime?
-  createdBy   String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  volunteer Volunteer     @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
-  need      VolunteerNeed @relation(fields: [needId], references: [id], onDelete: Restrict)
-
-  @@unique([volunteerId, needId])
-  @@index([volunteerId])
-  @@index([needId])
-  @@index([status])
-}
-
-model VolunteerAssignment {
-  id             String           @id @default(uuid())
-  volunteerId    String
-  needId         String?
-  organizationId String?
-  title          String           @default("General Assignment")
-  location       String?
-  notes          String?
-  startDate      DateTime         @default(now())
-  endDate        DateTime?
-  status         AssignmentStatus @default(ASSIGNED)
-  assignedAt     DateTime         @default(now())
-  completedAt    DateTime?
-  createdBy      String
-
-  volunteer    Volunteer            @relation(fields: [volunteerId], references: [id], onDelete: Restrict)
-  need         VolunteerNeed?       @relation(fields: [needId], references: [id], onDelete: Restrict)
-  organization Organization?        @relation(fields: [organizationId], references: [id])
-  attendance   VolunteerAttendance?
-
-  @@unique([volunteerId, needId])
-  @@index([volunteerId])
-  @@index([needId])
-  @@index([status])
-}
-
-model VolunteerAttendance {
-  id                 String    @id @default(uuid())
-  assignmentId       String    @unique
-  checkInTime        DateTime?
-  checkOutTime       DateTime?
-  verifiedBy         String?
-  verificationMethod String?
-
-  assignment VolunteerAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
-
-  @@index([assignmentId])
-}
-
-model VolunteerAudit {
-  id          String   @id @default(uuid())
-  volunteerId String?
-  action      String
-  entityType  String
-  entityId    String
-  metadata    Json?
-  createdAt   DateTime @default(now())
-
-  @@index([entityType])
-  @@index([entityId])
-  @@index([createdAt])
-}
-
-model Notification {
-  id String @id @default(uuid())
-
-  userId         String
-  organizationId String?
-
-  type  String
-  title String
-  body  String
-
-  isRead Boolean @default(false)
-
-  metadata Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([organizationId])
-  @@index([isRead])
-  @@index([createdAt])
-}
-
-model ActivityEvent {
-  id              String   @id @default(uuid())
-
-  type            String
-
-  actorId         String?
-  organizationId  String?
-  operationId     String?
-
-  message         String
-
-  metadata        Json?
-
-  createdAt       DateTime @default(now())
-
-  @@index([organizationId])
-  @@index([operationId])
-  @@index([createdAt])
-  @@index([actorId])
 }

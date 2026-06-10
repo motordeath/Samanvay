@@ -1,4 +1,5 @@
 import { prisma } from '../prisma';
+import { createAuditLog } from './audit.service';
 
 export async function createResourceOffer(data: any) {
   if (data.offeredQuantity <= 0) {
@@ -24,11 +25,29 @@ export async function createResourceOffer(data: any) {
   // Invariant 5: Offer creation does not reserve inventory
   return await prisma.resourceOffer.create({
     data: {
-      needId: data.needId,
-      offeringOrganizationId: data.offeringOrganizationId,
-      resourceLotId: data.resourceLotId,
+
+      need: {
+        connect: {
+          id: data.needId
+        }
+      },
+
+      offeringOrganization: {
+        connect: {
+          id: data.offeringOrganizationId
+        }
+      },
+
+      resourceLot: {
+        connect: {
+          id: data.resourceLotId
+        }
+      },
+
       offeredQuantity: data.offeredQuantity,
+
       notes: data.notes,
+
       createdById: data.createdById,
     },
   });
@@ -114,6 +133,14 @@ export async function acceptOffer(offerId: string, actioningOrganizationId: stri
         approvedById: approvedById,
       },
     });
+
+    await createAuditLog({
+      action: 'RESOURCE_OFFER_ACCEPTED' as any,
+      entityType: 'RESOURCE_OFFER' as any,
+      entityId: offer.id,
+      userId: approvedById,
+      organizationId: offer.need.organizationId,
+    }, tx);
 
     return {
       transfer,

@@ -3,76 +3,107 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../../app/providers/AuthProvider';
 import { workspaceUtils } from '../../../shared/lib/workspace';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import {
+  LayoutDashboard,
+  Briefcase,
+  Activity,
+  CalendarClock,
+  UserCircle,
+  Package,
+  Users,
+  ClipboardList,
+  ArrowLeftRight
+} from 'lucide-react';
 
 interface NavItem {
   label: string;
   path: string;
-  icon: React.ReactNode;
+  icon: React.FC<{ className?: string }>;
 }
 
 const volunteerNavigation: NavItem[] = [
-  { label: 'Overview', path: '/dashboard/overview', icon: <span className="w-5 h-5 flex items-center justify-center">O</span> },
-  { label: 'Assignments', path: '/dashboard/assignments', icon: <span className="w-5 h-5 flex items-center justify-center">A</span> },
-  { label: 'Activity', path: '/dashboard/activity', icon: <span className="w-5 h-5 flex items-center justify-center">L</span> },
+  { label: 'Overview', path: '/dashboard/overview', icon: LayoutDashboard },
+  { label: 'Assignments', path: '/dashboard/assignments', icon: Briefcase },
+  { label: 'Activity', path: '/dashboard/activity', icon: Activity },
+  { label: 'Availability', path: '/dashboard/availability', icon: CalendarClock },
+  { label: 'Profile', path: '/dashboard/profile', icon: UserCircle },
 ];
 
 const organizationNavigation: NavItem[] = [
-  { label: 'Overview', path: '/dashboard/overview', icon: <span className="w-5 h-5 flex items-center justify-center">O</span> },
-  { label: 'Inventory', path: '/dashboard/inventory', icon: <span className="w-5 h-5 flex items-center justify-center">I</span> },
-  { label: 'Volunteers', path: '/dashboard/volunteers', icon: <span className="w-5 h-5 flex items-center justify-center">V</span> },
-  { label: 'Requests', path: '/dashboard/requests', icon: <span className="w-5 h-5 flex items-center justify-center">R</span> },
-  { label: 'Transfers', path: '/dashboard/transfers', icon: <span className="w-5 h-5 flex items-center justify-center">T</span> },
-  { label: 'Activity', path: '/dashboard/activity', icon: <span className="w-5 h-5 flex items-center justify-center">L</span> },
+  { label: 'Overview', path: '/dashboard/overview', icon: LayoutDashboard },
+  { label: 'Inventory', path: '/dashboard/inventory', icon: Package },
+  { label: 'Volunteers', path: '/dashboard/volunteers', icon: Users },
+  { label: 'Requests', path: '/dashboard/requests', icon: ClipboardList },
+  { label: 'Transfers', path: '/dashboard/transfers', icon: ArrowLeftRight },
+  { label: 'Activity', path: '/dashboard/activity', icon: Activity },
 ];
 
-export const SidebarNavigation: React.FC = () => {
+interface SidebarNavigationProps {
+  isCollapsed: boolean;
+}
+
+export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({ isCollapsed }) => {
   const { activeWorkspace, user } = useAuth();
 
   let navItems: NavItem[] = [];
 
   if (workspaceUtils.isVolunteerWorkspace(activeWorkspace)) {
-    // In future: filter based on specific volunteer capabilities
     navItems = volunteerNavigation;
   } else if (workspaceUtils.isOrganizationWorkspace(activeWorkspace)) {
-    // In future: filter based on user.memberships[..].role and .status
     const orgId = workspaceUtils.getOrganizationWorkspaceId(activeWorkspace);
     const orgMembership = user?.memberships?.find(m => m.organization.id === orgId);
-    
-    // Example capability filtering (pseudo-code conceptually):
-    // const canViewInventory = orgMembership?.role === 'ADMIN' || orgMembership?.role === 'COORDINATOR';
-    // if (canViewInventory) items.push(inventoryNavItem);
-    
-    // For now, allow all organization navigation if active context is valid
+
     if (orgMembership?.status === 'ACTIVE') {
       navItems = organizationNavigation;
     }
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-900/50">
-      <div className="h-16 border-b border-slate-800 flex items-center px-6">
-        <h1 className="text-xl font-light tracking-wide text-white">Samanvay</h1>
+    <div className="flex flex-col h-full bg-[var(--color-sidebar)] overflow-hidden">
+      <div className={`h-14 border-b border-[var(--color-border)] flex items-center shrink-0 ${isCollapsed ? 'justify-center' : 'px-6'}`}>
+        <h1 className={`text-xl font-medium tracking-wide text-[var(--color-text-primary)] transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
+          Samanvay
+        </h1>
+        {isCollapsed && (
+          <span className="text-xl font-medium tracking-wide text-[var(--color-text-primary)] absolute">
+            S
+          </span>
+        )}
       </div>
 
-      <WorkspaceSwitcher />
+      <WorkspaceSwitcher isCollapsed={isCollapsed} />
 
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
-                isActive 
-                  ? 'bg-slate-800 text-white' 
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-              }`
-            }
-          >
-            {item.icon}
-            {item.label}
-          </NavLink>
-        ))}
+      <nav className={`flex-1 overflow-y-auto py-6 space-y-1 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `group relative flex items-center rounded-lg transition-colors text-sm font-medium ${isCollapsed ? 'justify-center py-3' : 'gap-3 px-4 py-3'
+                } ${isActive
+                  ? 'bg-[var(--color-surface-elevated)] text-[var(--color-primary)]'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)]'
+                }`
+              }
+              aria-label={item.label}
+            >
+              <Icon className="w-5 h-5 shrink-0" />
+
+              {!isCollapsed && (
+                <span className="truncate">{item.label}</span>
+              )}
+
+              {/* Tooltip for collapsed mode */}
+              {isCollapsed && (
+                <div className="absolute left-full ml-4 px-2.5 py-1.5 bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap shadow-md border border-[var(--color-border)]">
+                  {item.label}
+                </div>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
     </div>
   );

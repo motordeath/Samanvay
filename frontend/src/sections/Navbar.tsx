@@ -1,14 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
-import { Globe } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
 
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('samanvay_theme') || 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('samanvay_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
   return (
-    <motion.nav 
+    <motion.nav
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 1.5, ease: "easeOut" }}
@@ -16,15 +29,15 @@ export const Navbar: React.FC = () => {
     >
       {/* Logo */}
       <div className="flex items-center gap-2">
-        <span className="font-headline text-2xl font-semibold tracking-tight text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+        <span className="font-headline text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">
           Samanvay
         </span>
       </div>
 
       {/* Links - Hidden on mobile */}
-      <div className="hidden md:flex items-center gap-8 px-8 py-3 rounded-2xl bg-surface/20 backdrop-blur-md border border-white/5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+      <div className="hidden md:flex items-center gap-8 px-8 py-3 rounded-2xl bg-[var(--color-surface)]/80 backdrop-blur-md border border-[var(--color-border)] shadow-sm">
         {['Platform', 'Impact', 'Network', 'Stories'].map((item) => (
-          <a key={item} href={`#${item.toLowerCase()}`} className="text-sm font-medium text-on-surface hover:text-white transition-colors duration-300">
+          <a key={item} href={`#${item.toLowerCase()}`} className="text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors duration-300">
             {item}
           </a>
         ))}
@@ -32,15 +45,21 @@ export const Navbar: React.FC = () => {
 
       {/* CTA */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate('/login')} className="hidden sm:inline-flex text-sm py-2 px-5 cursor-pointer">
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2 cursor-pointer"
+          aria-label="Toggle theme"
+        >
+          {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+        </button>
+
+        <Button variant="ghost" onClick={() => navigate('/login')} className="hidden sm:inline-flex text-sm py-2 px-5 cursor-pointer text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] border border-transparent">
           Sign In
         </Button>
-        <Button variant="secondary" onClick={() => navigate('/signup')} className="hidden sm:inline-flex text-sm py-2 px-5 cursor-pointer">
+        <Button variant="secondary" onClick={() => navigate('/signup')} className="hidden sm:inline-flex text-sm py-2 px-5 cursor-pointer bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] border-transparent">
           Get Started
         </Button>
-        <button className="p-2 text-on-surface hover:text-white transition-colors cursor-pointer">
-          <Globe className="w-5 h-5 opacity-70" />
-        </button>
       </div>
     </motion.nav>
   );

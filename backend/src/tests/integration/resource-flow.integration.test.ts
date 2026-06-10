@@ -69,8 +69,9 @@ describe('Resource Engine Integration Scenario', () => {
     expect(transfer.quantity).toBe(100);
 
     // Step 6: Transfer completed (needs to go through IN_TRANSIT first per invariant 15)
-    await updateTransferStatus(transfer.id, 'IN_TRANSIT');
-    const completedTransfer = await updateTransferStatus(transfer.id, 'COMPLETED');
+    await updateTransferStatus(transfer.id, 'APPROVED', adminUser.id);
+    await updateTransferStatus(transfer.id, 'IN_TRANSIT', adminUser.id);
+    const completedTransfer = await updateTransferStatus(transfer.id, 'COMPLETED', adminUser.id);
     if (!completedTransfer) throw new Error('Transfer missing');
 
     expect(completedTransfer.status).toBe('COMPLETED');

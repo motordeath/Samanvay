@@ -78,7 +78,8 @@ export const workspaceUtils = {
       const memberships = user.memberships || [];
       return memberships.some((m: any) => 
         m.status === 'ACTIVE' && 
-        m.organization.id === workspace.organizationId
+        m.organization?.id === workspace.organizationId &&
+        typeof m.organization?.name === 'string'
       );
     }
 

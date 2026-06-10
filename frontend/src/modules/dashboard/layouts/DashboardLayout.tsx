@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../app/providers/AuthProvider';
 import { workspaceUtils } from '../../../shared/lib/workspace';
 import { DashboardTopbar } from '../components/DashboardTopbar';
@@ -7,6 +7,22 @@ import { SidebarNavigation } from '../components/SidebarNavigation';
 
 export const DashboardLayout: React.FC = () => {
   const { user, activeWorkspace, logout } = useAuth();
+  const location = useLocation();
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('samanvay_sidebar_collapsed') === 'true';
+  });
+
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('samanvay_sidebar_collapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
 
   // Validate active workspace before rendering layout
   const isValid = useMemo(() => workspaceUtils.isValidWorkspace(activeWorkspace, user), [activeWorkspace, user]);
@@ -32,11 +48,23 @@ export const DashboardLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex overflow-hidden">
+    <div className="min-h-screen bg-[var(--color-canvas)] text-[var(--color-text-primary)] flex overflow-hidden">
       
+      {/* Mobile Sidebar Overlay */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-[var(--color-canvas)]/80 lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar Region */}
-      <div className="w-64 flex-shrink-0 border-r border-slate-800 bg-slate-900/30 flex flex-col z-30">
-        <SidebarNavigation />
+      <div 
+        className={`fixed inset-y-0 left-0 z-50 transform lg:relative lg:translate-x-0 transition-[width,transform] duration-200 ease-out flex-shrink-0 border-r border-[var(--color-border)] bg-[var(--color-sidebar)] flex flex-col ${
+          isMobileSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0'
+        } ${isSidebarCollapsed ? 'lg:w-[72px]' : 'lg:w-64'}`}
+      >
+        <SidebarNavigation isCollapsed={isSidebarCollapsed} />
       </div>
 
       {/* Main Container */}
@@ -46,6 +74,9 @@ export const DashboardLayout: React.FC = () => {
           workspaceType={workspaceTypeStr}
           userName={user.name || 'User'}
           onLogout={logout}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         />
 
         {/* Content Outlet */}
@@ -53,11 +84,6 @@ export const DashboardLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
-
-      {/* Future Command Panel Region */}
-      {/* <div className="hidden xl:block w-72 border-l border-slate-800 bg-slate-900/30 flex-shrink-0">
-         Future contextual actions / activity feed
-      </div> */}
     </div>
   );
 };

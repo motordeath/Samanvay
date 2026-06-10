@@ -38,11 +38,17 @@ const allowedOrigins = [
   'http://localhost:5174',
 
   'https://samanvay-onega.vercel.app',
-  'https://samanvay-frontend-76y6.vercel.app'
+  'https://samanvay-frontend-76y6.vercel.app',
+
+  'https://samanvay-git-stabilization-testing-motordeaths-projects.vercel.app'
 ].filter(Boolean) as string[];
 
 app.use(cors({
   origin: function (origin, callback) {
+
+    console.log('ALLOWED ORIGINS:', allowedOrigins);
+    console.log('REQUEST ORIGIN:', origin);
+
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
@@ -53,7 +59,24 @@ app.use(cors({
 
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
-  credentials: true
+
+  credentials: true,
+
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-org-id',
+    'x-request-id'
+  ],
+
+  methods: [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS'
+  ]
 }));
 app.use(express.json());
 

@@ -19,8 +19,8 @@ export class ApiError extends Error {
 
 export const api = async <T>(endpoint: string, options: ApiOptions = {}): Promise<T> => {
   const token = localStorage.getItem('samanvay_token');
-  
-  const baseUrl = options.useCoordinationLayer 
+
+  const baseUrl = options.useCoordinationLayer
     ? import.meta.env.VITE_COORDINATION_URL
     : import.meta.env.VITE_API_URL;
 
@@ -36,6 +36,32 @@ export const api = async <T>(endpoint: string, options: ApiOptions = {}): Promis
   }
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+  const workspaceRaw =
+    localStorage.getItem('samanvay_active_workspace');
+
+  if (workspaceRaw) {
+    try {
+      const workspace = JSON.parse(workspaceRaw);
+
+      if (workspace?.organizationId) {
+        headers.set(
+          'x-org-id',
+          workspace.organizationId
+        );
+      }
+    } catch (error) {
+      console.error(
+        'Failed to parse workspace context',
+        error
+      );
+    }
+  }
+
+
+  if (!headers.has('x-request-id')) {
+    const requestId = crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random()}`;
+    headers.set('x-request-id', requestId);
   }
 
   const response = await fetch(url, {

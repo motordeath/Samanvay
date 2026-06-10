@@ -43,9 +43,19 @@ export async function updateResourceLot(id: string, organizationId: string, data
 }
 
 export async function getResourceLots(filters: any, skip: number = 0, take: number = 20) {
-  return await prisma.resourceLot.findMany({
+  const lots = await prisma.resourceLot.findMany({
     where: filters,
     skip,
     take,
+    include: {
+      resource: true,
+      organization: true
+    }
   });
+
+  if (process.env.STABILIZATION_DEBUG && lots.length > 0) {
+    console.log('[LOTS]', JSON.stringify(lots[0], null, 2));
+  }
+
+  return lots;
 }

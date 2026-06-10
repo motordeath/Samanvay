@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
+import { AuthLayout } from '../components/AuthLayout';
+import { useAuth } from '../../../app/providers/AuthProvider';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -8,6 +10,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,9 +19,7 @@ export function LoginPage() {
 
     try {
       const response = await authService.login({ email, password });
-      // Store token
-      localStorage.setItem('samanvay_token', response.data.token);
-      // Temporarily direct to dashboard or onboarding placeholder
+      await login(response.data.token);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
@@ -28,83 +29,64 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#020617] text-white flex items-center justify-center p-6 overflow-hidden">
-      {/* Background Atmosphere */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.1),transparent_40%)] pointer-events-none" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(217,70,239,0.05),transparent_50%)] pointer-events-none" />
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="mb-12 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-12 h-12 rounded-full border border-white/10 shadow-[0_0_20px_rgba(139,92,246,0.15)] flex items-center justify-center bg-[#0f172a]/30 backdrop-blur-md">
-              <div className="w-2 h-2 bg-[#8B5CF6] rounded-full shadow-[0_0_10px_rgba(139,92,246,0.8)]" />
-            </div>
+    <AuthLayout 
+      title="Access Coordination" 
+      subtitle="Enter the Samanvay operational environment."
+    >
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 sm:p-8">
+        <form onSubmit={handleLogin} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">
+              Operational Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="node@organization.org"
+              required
+              className="w-full bg-[var(--color-canvas)] border border-[var(--color-border)] rounded-md px-3 py-2.5 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/50"
+            />
           </div>
-          <h1 className="text-3xl md:text-4xl font-serif font-semibold tracking-tight text-[#f4f2ff] mb-3">
-            Access Coordination
-          </h1>
-          <p className="text-sm md:text-base text-[#dcd6ff]/80 leading-relaxed max-w-sm mx-auto font-sans">
-            Enter the Samanvay operational environment.
-          </p>
-        </div>
 
-        <div className="p-8 md:p-10 rounded-2xl bg-gradient-to-b from-[#141c34]/80 to-[#080c1c]/80 backdrop-blur-xl border border-[#8B5CF6]/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.035),0_0_60px_rgba(139,92,246,0.05)]">
-          <form onSubmit={handleLogin} className="flex flex-col gap-6 font-sans">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[#dcd6ff]/80 pl-1">
-                Operational Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="node@organization.org"
-                required
-                className="w-full bg-[#0f172a]/40 border border-white/5 rounded-xl px-4 py-3 text-[#f4f2ff] placeholder:text-[#beb4ff]/40 focus:outline-none focus:border-[#8B5CF6]/40 focus:bg-[#0f172a]/60 transition-all duration-300"
-              />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-[var(--color-text-secondary)]">
+              Security Key
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full bg-[var(--color-canvas)] border border-[var(--color-border)] rounded-md px-3 py-2.5 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/50"
+            />
+          </div>
+
+          {error && (
+            <div className="text-sm text-[var(--color-danger)] bg-[var(--color-danger)]/10 p-3 rounded-md border border-[var(--color-danger)]/20">
+              {error}
             </div>
+          )}
 
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[#dcd6ff]/80 pl-1">
-                Security Key
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full bg-[#0f172a]/40 border border-white/5 rounded-xl px-4 py-3 text-[#f4f2ff] placeholder:text-[#beb4ff]/40 focus:outline-none focus:border-[#8B5CF6]/40 focus:bg-[#0f172a]/60 transition-all duration-300"
-              />
-            </div>
+          <div className="pt-2 flex flex-col gap-3">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-2.5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
+              {isLoading ? 'Authenticating...' : 'Sign In'}
+            </button>
 
-            {error && (
-              <div className="text-sm text-red-400/90 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-                {error}
-              </div>
-            )}
-
-            <div className="pt-4 flex flex-col gap-4">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-500 overflow-hidden group bg-[#8B5CF6] text-white border border-[#8B5CF6]/30 hover:border-[#8B5CF6]/60 hover:bg-[#8B5CF6]/80 shadow-[0_0_30px_rgba(168,85,247,0.28),0_0_80px_rgba(168,85,247,0.12)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Authenticating...' : 'Sign In'}
-              </button>
-
-              <div className="text-center mt-2">
-                <Link
-                  to="/signup"
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-xl font-medium transition-all duration-500 bg-transparent text-[#dcd6ff]/80 border border-white/5 hover:border-white/10 hover:bg-white/5 w-full"
-                >
-                  Create Account
-                </Link>
-              </div>
-            </div>
-          </form>
-        </div>
+            <Link
+              to="/signup"
+              className="w-full py-2.5 bg-[var(--color-surface-elevated)] hover:bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] rounded-md font-medium transition-colors text-center"
+            >
+              Create Account
+            </Link>
+          </div>
+        </form>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

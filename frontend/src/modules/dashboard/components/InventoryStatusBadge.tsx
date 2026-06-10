@@ -11,22 +11,22 @@ export const InventoryStatusBadge: React.FC<InventoryStatusBadgeProps> = ({ stat
   
   switch (status) {
     case 'Available':
-      styleClasses = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]';
+      styleClasses = 'bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/20';
       break;
     case 'Low Stock':
-      styleClasses = 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]';
+      styleClasses = 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/20';
       break;
     case 'Critical':
-      styleClasses = 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]';
+      styleClasses = 'bg-[var(--color-danger)]/10 text-[var(--color-danger)] border-[var(--color-danger)]/20';
       break;
     case 'Reserved':
-      styleClasses = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-[0_0_10px_rgba(99,102,241,0.1)]';
+      styleClasses = 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/20';
       break;
     case 'Transferred':
-      styleClasses = 'bg-slate-500/10 text-slate-400 border-slate-500/20 shadow-[0_0_10px_rgba(100,116,139,0.1)]';
+      styleClasses = 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)]';
       break;
     default:
-      styleClasses = 'bg-slate-500/10 text-slate-400 border-slate-500/20 shadow-[0_0_10px_rgba(100,116,139,0.1)]';
+      styleClasses = 'bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)]';
   }
 
   return (

@@ -13,7 +13,10 @@ export function requireOrganizationRole(allowedRoles: string[]) {
           error: { message: 'Authentication required' }
         });
       }
-
+      console.log('HEADERS:', req.headers);
+      console.log('BODY:', req.body);
+      console.log('QUERY:', req.query);
+      console.log('PARAMS:', req.params);
       const organizationId = getOrganizationContext(req);
       if (!organizationId) {
         return res.status(400).json({

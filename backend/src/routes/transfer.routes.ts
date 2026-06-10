@@ -14,4 +14,9 @@ router.patch('/:id/start-transit', authenticate, requireTransferOwnership(), sta
 router.patch('/:id/deliver', authenticate, requireTransferOwnership(), deliverTransferController);
 router.patch('/:id/cancel', authenticate, requireTransferOwnership(), cancelTransferController);
 
+// Legacy/Test Aliases
+router.post('/:id/start', authenticate, requireTransferOwnership(), startTransitController);
+router.post('/:id/complete', authenticate, requireTransferOwnership(), deliverTransferController);
+router.post('/:id/cancel', authenticate, requireTransferOwnership(), cancelTransferController);
+
 export default router;

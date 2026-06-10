@@ -4,7 +4,9 @@ import { AuthProvider } from '../providers/AuthProvider';
 import { OnboardingGuard } from './OnboardingGuard';
 import { ProtectedRoute } from './ProtectedRoute';
 
-// Public Landing
+import { ErrorBoundary } from '../../shared/components/ErrorBoundary';
+
+// PUBLIC
 import { LandingPage } from '../../modules/landing/pages/LandingPage';
 
 // Auth
@@ -35,9 +37,10 @@ import { RequestDetailPage } from '../../modules/dashboard/pages/RequestDetailPa
 export const AppRouter: React.FC = () => {
   return (
     <AuthProvider>
-      <Routes>
-        {/* PUBLIC */}
-        <Route path="/" element={<LandingPage />} />
+      <ErrorBoundary>
+        <Routes>
+          {/* PUBLIC */}
+          <Route path="/" element={<LandingPage />} />
         
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
@@ -119,7 +122,8 @@ export const AppRouter: React.FC = () => {
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </ErrorBoundary>
     </AuthProvider>
   );
 };
