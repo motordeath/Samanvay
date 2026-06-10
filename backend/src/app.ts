@@ -97,7 +97,7 @@ app.use('/api/events', eventRoutes);
 
 app.use('/api/resources', resourceRoutes);
 app.use('/api/resource-lots', resourceLotRoutes);
-app.use('/api/needs', resourceNeedRoutes);
+app.use('/api/resource-needs', resourceNeedRoutes);  // ← change this
 app.use('/api/offers', resourceOfferRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/audit', auditRoutes);

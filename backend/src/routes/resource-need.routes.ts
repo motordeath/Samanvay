@@ -6,7 +6,8 @@ const router = Router();
 import { authenticate } from '../middleware/auth.middleware';
 import { requireOrganizationRole } from '../middleware/authorization.middleware';
 
-router.post('/', authenticate, requireOrganizationRole(['OWNER', 'ADMIN', 'COORDINATOR']), createResourceNeedController);
+// resource-need.routes.ts
+router.post('/', authenticate, requireOrganizationRole(['OWNER', 'ADMIN', 'COORDINATOR', 'VOLUNTEER_MANAGER']), createResourceNeedController);
 router.get('/', getResourceNeedsController);
 router.get('/:id', getResourceNeedController);
 router.get('/:id/matches', authenticate, getResourceNeedMatchesController);

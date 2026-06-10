@@ -10,12 +10,13 @@ interface CreateRequestModalProps {
 }
 
 export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ onClose, onSuccess }) => {
-  const { activeWorkspace } = useAuth();
+  const { activeWorkspace, user } = useAuth();
   const [resources, setResources] = useState<any[]>([]);
   const [resourceId, setResourceId] = useState('');
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -38,8 +39,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ onClose,
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     const orgId = workspaceUtils.getOrganizationWorkspaceId(activeWorkspace);
-    if (!orgId) return;
+    if (!orgId) {
+      setError('No active organization workspace selected.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -48,7 +53,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ onClose,
         resourceId,
         quantity: parseInt(quantity, 10),
         notes,
-        createdById: 'system' // placeholder for Phase 2 constraints
+        createdById: user?.id,
       };
 
       const res = await api<{ success: boolean }>('/api/resource-needs', {
@@ -58,9 +63,11 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ onClose,
 
       if (res.success) {
         onSuccess();
+      } else {
+        setError('Request could not be created. Please try again.');
       }
-    } catch (err) {
-      console.error('Failed to create request', err);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create request.');
     } finally {
       setIsSubmitting(false);
     }
@@ -118,6 +125,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ onClose,
               placeholder="Urgency, specific variants needed, delivery instructions..."
             />
           </div>
+
+          {error && (
+            <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5">
+              {error}
+            </div>
+          )}
 
           <div className="pt-2">
             <button
