@@ -56,7 +56,7 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ onClose,
         createdById: user?.id,
       };
 
-      const res = await api<{ success: boolean }>('/api/resource-needs', {
+      const res = await api<{ success: boolean }>('/api/needs', {
         method: 'POST',
         body: JSON.stringify(payload)
       });

@@ -29,7 +29,7 @@ export const VolunteerAssignmentPanel: React.FC = () => {
       }
 
       try {
-        const res = await api<{ success: boolean; data: AssignmentData[] }>(`/api/volunteers/assignments?organizationId=${orgId}`);
+        const res = await api<{ success: boolean; data: AssignmentData[] }>(`/api/assignments?organizationId=${orgId}`);
         if (isMounted && res.success) {
           setAssignments(res.data);
         }
@@ -58,7 +58,7 @@ export const VolunteerAssignmentPanel: React.FC = () => {
         <Shield className="w-5 h-5 text-indigo-400" />
         Active Deployments
       </h3>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {assignments.map(assignment => (
           <div key={assignment.id} className="bg-slate-950/50 border border-slate-800/50 rounded-xl p-4 flex flex-col gap-3 transition-colors hover:bg-slate-900/80">
@@ -74,7 +74,7 @@ export const VolunteerAssignmentPanel: React.FC = () => {
                 {assignment.status}
               </span>
             </div>
-            
+
             <div className="flex items-center gap-4 text-xs text-slate-500 mt-2">
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />

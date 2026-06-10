@@ -32,7 +32,7 @@ export const RequestsPage: React.FC = () => {
     const orgId = workspaceUtils.getOrganizationWorkspaceId(activeWorkspace);
     if (orgId) {
       try {
-        const res = await api<{ success: boolean; data: any[] }>(`/api/resource-needs?organizationId=${orgId}`);
+        const res = await api<{ success: boolean; data: any[] }>(`/api/needs?organizationId=${orgId}`);
         if (res.success) {
           setRequests(res.data);
         }
@@ -54,7 +54,7 @@ export const RequestsPage: React.FC = () => {
           <h1 className="text-2xl font-light text-white mb-1">Requests Management</h1>
           <p className="text-slate-400">Coordinate and track resource needs across organizations.</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsCreateModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
         >
@@ -91,8 +91,8 @@ export const RequestsPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-800/50">
                 {requests.map(req => (
-                  <tr 
-                    key={req.id} 
+                  <tr
+                    key={req.id}
                     onClick={() => navigate(`/dashboard/requests/${req.id}`)}
                     className="group hover:bg-slate-800/30 transition-colors cursor-pointer"
                   >
@@ -123,12 +123,11 @@ export const RequestsPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        req.status === 'OPEN' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                        req.status === 'FULFILLED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        req.status === 'CANCELLED' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' :
-                        'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
-                      }`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${req.status === 'OPEN' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                          req.status === 'FULFILLED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            req.status === 'CANCELLED' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' :
+                              'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                        }`}>
                         {req.status}
                       </span>
                     </td>

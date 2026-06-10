@@ -10,14 +10,14 @@ import { MembershipRequestsPanel } from '../components/MembershipRequestsPanel';
 
 export const OverviewPage: React.FC = () => {
   const { activeWorkspace } = useAuth();
-  
+
   const [metrics, setMetrics] = useState<OverviewMetrics>({
     inventoryItems: 0,
     activeTransfers: 0,
     pendingRequests: 0,
     activeVolunteers: 0
   });
-  
+
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -26,9 +26,9 @@ export const OverviewPage: React.FC = () => {
 
     const fetchOverviewData = async () => {
       setIsLoading(true);
-      
+
       const orgId = workspaceUtils.getOrganizationWorkspaceId(activeWorkspace);
-      
+
       try {
         let inventoryCount = 0;
         let transfersCount = 0;
@@ -39,7 +39,7 @@ export const OverviewPage: React.FC = () => {
           const [lotsRes, transfersRes, needsRes, auditRes] = await Promise.all([
             api<{ success: boolean; data: any[] }>(`/api/resource-lots?organizationId=${orgId}`),
             api<{ success: boolean; data: any[] }>(`/api/transfers?organizationId=${orgId}`),
-            api<{ success: boolean; data: any[] }>(`/api/resource-needs?organizationId=${orgId}`),
+            api<{ success: boolean; data: any[] }>(`/api/needs?organizationId=${orgId}`),
             api<{ success: boolean; data: any[] }>(`/api/audit`) // Phase 3.4 says OWNER/ADMIN only. We'll try fetching.
           ]);
 
@@ -49,8 +49,8 @@ export const OverviewPage: React.FC = () => {
 
           if (transfersRes.success && transfersRes.data) {
             // Filter pending/in-transit transfers for this org
-            transfersCount = transfersRes.data.filter(t => 
-              (t.fromOrganizationId === orgId || t.toOrganizationId === orgId) && 
+            transfersCount = transfersRes.data.filter(t =>
+              (t.fromOrganizationId === orgId || t.toOrganizationId === orgId) &&
               ['PENDING', 'IN_TRANSIT'].includes(t.status)
             ).length;
           }

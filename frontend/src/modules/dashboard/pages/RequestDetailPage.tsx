@@ -36,8 +36,8 @@ export const RequestDetailPage: React.FC = () => {
     const fetchRequestAndMatches = async () => {
       try {
         const [resReq, resMatches] = await Promise.all([
-          api<{ success: boolean; data: RequestDetailData }>(`/api/resource-needs/${id}`),
-          api<{ success: boolean; data: RequestMatchData[] }>(`/api/resource-needs/${id}/matches`)
+          api<{ success: boolean; data: RequestDetailData }>(`/api/needs/${id}`),
+          api<{ success: boolean; data: RequestMatchData[] }>(`/api/needs/${id}/matches`)
         ]);
         if (isMounted) {
           if (resReq.success) setRequest(resReq.data);
@@ -78,7 +78,7 @@ export const RequestDetailPage: React.FC = () => {
     <div className="h-full flex flex-col gap-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-start gap-4">
-        <button 
+        <button
           onClick={() => navigate('/dashboard/requests')}
           className="mt-1 p-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
         >
@@ -88,12 +88,11 @@ export const RequestDetailPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-light text-white tracking-tight">Request Details</h1>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                request.status === 'OPEN' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                request.status === 'FULFILLED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                request.status === 'CANCELLED' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' :
-                'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
-              }`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${request.status === 'OPEN' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                  request.status === 'FULFILLED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                    request.status === 'CANCELLED' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' :
+                      'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                }`}>
                 {request.status}
               </span>
             </div>
@@ -113,7 +112,7 @@ export const RequestDetailPage: React.FC = () => {
               <Package className="w-5 h-5 text-indigo-400" />
               Resource Requirements
             </h3>
-            
+
             <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-xs font-medium uppercase tracking-wider text-slate-500 block mb-1">Requested Resource</span>
@@ -140,10 +139,10 @@ export const RequestDetailPage: React.FC = () => {
               <h3 className="text-lg font-medium text-white mb-4">Potential Fulfillment Sources</h3>
               <div className="flex flex-col gap-3">
                 {matches.map(match => (
-                  <RequestMatchCard 
-                    key={match.resourceLotId} 
-                    match={match} 
-                    onInitiateTransfer={handleInitiateTransfer} 
+                  <RequestMatchCard
+                    key={match.resourceLotId}
+                    match={match}
+                    onInitiateTransfer={handleInitiateTransfer}
                   />
                 ))}
               </div>
